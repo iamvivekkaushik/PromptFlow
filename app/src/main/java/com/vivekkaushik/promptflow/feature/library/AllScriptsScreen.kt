@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -49,6 +50,8 @@ import com.vivekkaushik.promptflow.ui.theme.Sora
 import com.vivekkaushik.promptflow.ui.theme.SurfaceContainer
 import com.vivekkaushik.promptflow.ui.theme.SurfaceContainerHigh
 import com.vivekkaushik.promptflow.ui.theme.Warning
+import com.vivekkaushik.promptflow.ui.components.PFIcon
+import com.vivekkaushik.promptflow.R
 
 private val FILTERS = listOf("All", "Drafts", "Recorded")
 
@@ -87,7 +90,7 @@ fun AllScriptsScreen(
             Box(
                 Modifier.size(38.dp).clip(CircleShape).background(SurfaceContainer).clickable(onClick = onBack),
                 contentAlignment = Alignment.Center
-            ) { Text("←", color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp) }
+            ) { PFIcon(R.drawable.ic_back, 19.dp, MaterialTheme.colorScheme.onSurface) }
             Text("All scripts", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 22.sp), modifier = Modifier.weight(1f))
             Text("${filtered.size} ${if (filtered.size == 1) "script" else "scripts"} · on device", fontFamily = PlexMono, fontSize = 11.sp, color = Outline)
         }
@@ -101,6 +104,8 @@ fun AllScriptsScreen(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            PFIcon(R.drawable.ic_search, 17.dp, Outline)
+            Spacer(Modifier.width(12.dp))
             Box(Modifier.weight(1f)) {
                 BasicTextField(
                     value = query,
@@ -203,7 +208,10 @@ fun AllScriptsScreen(
                                     .clickable { onOpenStudio(script) }
                                     .padding(horizontal = 12.dp, vertical = 5.dp)
                             ) {
-                                Text("▶ Play", fontFamily = Sora, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = OnLime)
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                    PFIcon(R.drawable.ic_play, 12.dp, OnLime)
+                                    Text("Play", fontFamily = Sora, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = OnLime)
+                                }
                             }
                         }
                     }

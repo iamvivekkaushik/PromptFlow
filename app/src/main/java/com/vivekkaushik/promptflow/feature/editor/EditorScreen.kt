@@ -42,6 +42,8 @@ import com.vivekkaushik.promptflow.ui.theme.SurfaceContainer
 import com.vivekkaushik.promptflow.ui.theme.SurfaceContainerHigh
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
+import com.vivekkaushik.promptflow.ui.components.PFIcon
+import com.vivekkaushik.promptflow.R
 
 /** Script editor with live word count and est. duration = wordCount / WPM (spec §04). */
 @OptIn(FlowPreview::class)
@@ -92,7 +94,7 @@ fun EditorScreen(
             Box(
                 Modifier.size(34.dp).clip(CircleShape).background(SurfaceContainerHigh).clickable(onClick = onBack),
                 contentAlignment = Alignment.Center
-            ) { Text("←", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            ) { PFIcon(R.drawable.ic_back, 19.dp, MaterialTheme.colorScheme.onSurfaceVariant) }
             Text(
                 "$words w · $est",
                 fontFamily = PlexMono, fontSize = 12.sp, color = Outline,
@@ -106,14 +108,20 @@ fun EditorScreen(
                         .clickable { onOpenOverlay(s.copy(title = title, body = body)) }
                         .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
-                    Text("Overlay", style = MaterialTheme.typography.labelLarge, color = Lime)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        PFIcon(R.drawable.ic_pip, 13.dp, Lime)
+                        Text("Overlay", style = MaterialTheme.typography.labelLarge, color = Lime)
+                    }
                 }
                 Box(
                     Modifier.clip(RoundedCornerShape(100.dp)).background(Lime)
                         .clickable { onOpenStudio(s.copy(title = title, body = body)) }
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Text("▶ Studio", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimary)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        PFIcon(R.drawable.ic_play, 12.dp, MaterialTheme.colorScheme.onPrimary)
+                        Text("Studio", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimary)
+                    }
                 }
             }
         }

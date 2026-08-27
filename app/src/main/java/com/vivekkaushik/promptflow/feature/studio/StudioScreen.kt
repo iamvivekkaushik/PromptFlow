@@ -94,6 +94,8 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.math.sin
+import com.vivekkaushik.promptflow.ui.components.PFIcon
+import com.vivekkaushik.promptflow.R
 
 private val QUALITIES = listOf(
     Quality.UHD to "4K",
@@ -314,11 +316,11 @@ fun StudioScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             RailButton(
-                label = "⇋",
+                iconRes = R.drawable.ic_mirror_h,
                 active = settings.mirrorH,
                 onClick = { scope.launch { Graph.settings.setMirrorH(!settings.mirrorH) } }
             )
-            RailButton(label = "↺", active = false, onClick = ::flipCamera)
+            RailButton(iconRes = R.drawable.ic_swap, active = false, onClick = ::flipCamera)
             RailButton(label = ASPECTS[aspectIdx].first, active = aspectIdx != 0, small = true, onClick = ::cycleAspect)
         }
 
@@ -337,14 +339,18 @@ fun StudioScreen(onBack: () -> Unit) {
                 // Live level from the recorder's audio stats; no mic tap while idle
                 val micDb = if (isRecording && audioAmplitude > 0.0001f)
                     (20 * kotlin.math.log10(audioAmplitude.toDouble())).toInt().coerceIn(-60, 0) else null
+                PFIcon(R.drawable.ic_mic, 12.dp, if (micDb != null && micDb > -6) Record else Outline)
+                Spacer(Modifier.width(5.dp))
                 Text(
                     if (micDb != null) "MIC $micDb dB" else "MIC — dB",
                     fontFamily = PlexMono, fontSize = 10.sp,
                     color = if (micDb != null && micDb > -6) Record else Outline
                 )
                 Spacer(Modifier.weight(1f))
+                PFIcon(R.drawable.ic_voice, 13.dp, if (settings.voiceSync) Lime else Color(0xFF5A5D50))
+                Spacer(Modifier.width(5.dp))
                 Text(
-                    "● VOICE SYNC ${if (settings.voiceSync) "ON" else "OFF"}",
+                    "VOICE SYNC ${if (settings.voiceSync) "ON" else "OFF"}",
                     fontFamily = PlexMono, fontSize = 10.sp,
                     color = if (settings.voiceSync) Lime else Color(0xFF5A5D50)
                 )
@@ -374,7 +380,7 @@ fun StudioScreen(onBack: () -> Unit) {
                     Modifier.size(48.dp).clip(CircleShape).background(SurfaceContainerHigh)
                         .clickable { engine.rewind() },
                     contentAlignment = Alignment.Center
-                ) { Text("↺", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurface) }
+                ) { PFIcon(R.drawable.ic_rewind, 21.dp, MaterialTheme.colorScheme.onSurface) }
 
                 // 72dp record button; red circle idle → rounded red square while recording
                 val innerSize by androidx.compose.animation.core.animateDpAsState(
@@ -436,10 +442,7 @@ fun StudioScreen(onBack: () -> Unit) {
                         .clickable { engine.togglePlay(settings.startDelaySec) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        if (engineState.playing || engineState.countdown > 0) "❚❚" else "▶",
-                        fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = OnLime
-                    )
+                    PFIcon(if (engineState.playing || engineState.countdown > 0) R.drawable.ic_pause else R.drawable.ic_play, 21.dp, OnLime)
                 }
             }
         }
@@ -451,7 +454,7 @@ fun StudioScreen(onBack: () -> Unit) {
                 .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
                 .clickable(onClick = onBack),
             contentAlignment = Alignment.Center
-        ) { Text("←", color = MaterialTheme.colorScheme.onSurface) }
+        ) { PFIcon(R.drawable.ic_back, 19.dp, MaterialTheme.colorScheme.onSurface) }
     }
 }
 
@@ -496,7 +499,13 @@ private fun StatusChip(onClick: (() -> Unit)? = null, content: @Composable andro
 }
 
 @Composable
-private fun RailButton(label: String, active: Boolean, small: Boolean = false, onClick: () -> Unit) {
+private fun RailButton(
+    label: String? = null,
+    iconRes: Int? = null,
+    active: Boolean,
+    small: Boolean = false,
+    onClick: () -> Unit,
+) {
     Box(
         Modifier.size(44.dp).clip(CircleShape)
             .background(Color(0xFF0C0E0A).copy(alpha = 0.7f))
@@ -504,12 +513,17 @@ private fun RailButton(label: String, active: Boolean, small: Boolean = false, o
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            label,
-            fontSize = if (small) 11.sp else 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = if (active) Lime else MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        val tint = if (active) Lime else MaterialTheme.colorScheme.onSurfaceVariant
+        if (iconRes != null) {
+            PFIcon(iconRes, 21.dp, tint)
+        } else {
+            Text(
+                label.orEmpty(),
+                fontSize = if (small) 11.sp else 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = tint
+            )
+        }
     }
 }
 

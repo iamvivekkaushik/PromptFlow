@@ -56,6 +56,8 @@ import com.vivekkaushik.promptflow.ui.theme.PromptFlowTheme
 import com.vivekkaushik.promptflow.ui.theme.Record
 import com.vivekkaushik.promptflow.ui.theme.Sora
 import kotlinx.coroutines.launch
+import com.vivekkaushik.promptflow.ui.components.PFIcon
+import com.vivekkaushik.promptflow.R
 
 /**
  * Floating window anatomy (spec §02): 32dp drag header, glass text viewport with the
@@ -96,7 +98,7 @@ fun OverlayContent(
                     .clickable { bubble = false },
                 contentAlignment = Alignment.Center
             ) {
-                Text("≡", fontFamily = Sora, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Lime)
+                PFIcon(R.drawable.ic_mark, 24.dp, Lime)
                 if (engineState.playing) {
                     val pulse by rememberInfiniteTransition(label = "p").animateFloat(
                         1f, 0.35f, infiniteRepeatable(tween(600), RepeatMode.Reverse), label = "pv"
@@ -146,7 +148,7 @@ fun OverlayContent(
                         .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(6.dp))
                         .clickable { bubble = true },
                     contentAlignment = Alignment.Center
-                ) { Text("◦", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                ) { PFIcon(R.drawable.ic_pip, 12.dp, MaterialTheme.colorScheme.onSurfaceVariant) }
                 Spacer(Modifier.width(6.dp))
                 Box(
                     Modifier.size(22.dp).clip(RoundedCornerShape(6.dp))
@@ -192,15 +194,12 @@ fun OverlayContent(
                     Modifier.size(34.dp).clip(CircleShape).background(Lime).clickable { engine.togglePlay(settings.startDelaySec) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        if (engineState.playing || engineState.countdown > 0) "❚❚" else "▶",
-                        fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = OnLime
-                    )
+                    PFIcon(if (engineState.playing || engineState.countdown > 0) R.drawable.ic_pause else R.drawable.ic_play, 15.dp, OnLime)
                 }
                 Box(
                     Modifier.size(30.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.08f)).clickable { engine.rewind() },
                     contentAlignment = Alignment.Center
-                ) { Text("↺", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface) }
+                ) { PFIcon(R.drawable.ic_rewind, 15.dp, MaterialTheme.colorScheme.onSurface) }
                 Slider(
                     value = settings.overlayOpacity.toFloat(),
                     onValueChange = { v -> scope.launch { Graph.settings.setOverlayOpacity(v.toInt()) } },
@@ -212,7 +211,7 @@ fun OverlayContent(
                 Box(
                     Modifier.size(30.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.08f)).clickable(onClick = onOpenSettings),
                     contentAlignment = Alignment.Center
-                ) { Text("⚙", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                ) { PFIcon(R.drawable.ic_tune, 15.dp, MaterialTheme.colorScheme.onSurfaceVariant) }
             }
         }
     }

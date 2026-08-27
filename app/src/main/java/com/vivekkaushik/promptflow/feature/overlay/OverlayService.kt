@@ -162,7 +162,7 @@ class OverlayService : LifecycleService(), ViewModelStoreOwner, SavedStateRegist
             PendingIntent.FLAG_IMMUTABLE
         )
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_stat_prompt)
             .setContentTitle("PromptFlow overlay running")
             .setContentText("The prompter is floating above your apps.")
             .addAction(0, "Stop", stopIntent)

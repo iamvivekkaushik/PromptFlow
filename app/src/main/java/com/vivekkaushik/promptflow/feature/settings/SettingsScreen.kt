@@ -56,6 +56,8 @@ import com.vivekkaushik.promptflow.ui.theme.SurfaceContainer
 import com.vivekkaushik.promptflow.ui.theme.SurfaceContainerHigh
 import kotlinx.coroutines.launch
 import java.io.File
+import com.vivekkaushik.promptflow.ui.components.PFIcon
+import com.vivekkaushik.promptflow.R
 
 private val GOOGLE_FONTS = listOf(
     "IBM Plex Sans", "Sora", "Inter", "Roboto", "Open Sans", "Lato",
@@ -97,13 +99,13 @@ fun SettingsScreen(onBack: () -> Unit) {
             Box(
                 Modifier.size(34.dp).clip(CircleShape).background(SurfaceContainerHigh).clickable(onClick = onBack),
                 contentAlignment = Alignment.Center
-            ) { Text("←", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            ) { PFIcon(R.drawable.ic_back, 19.dp, MaterialTheme.colorScheme.onSurfaceVariant) }
             Text("Prompter settings", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 22.sp))
         }
 
         // Live preview
         Box(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(SurfaceContainer).height(110.dp).padding(16.dp)
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(SurfaceContainer).height(170.dp).padding(16.dp)
         ) {
             PrompterPreviewText(settings, "The quick brown fox jumps over the lazy dog while reading at pace.")
             Text("LIVE PREVIEW", fontFamily = PlexMono, fontSize = 10.sp, color = Outline, modifier = Modifier.align(Alignment.TopEnd))
@@ -229,21 +231,6 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
         }
 
-        // HARDWARE REMOTES
-//        SettingsCard("HARDWARE REMOTES") {
-//            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-//                RemoteChip("✓ Volume keys", active = true)
-//                RemoteChip("BT clicker", active = false)
-//            }
-//            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-//                RemoteChip("Wear OS", active = false)
-//                RemoteChip("Keyboard", active = false)
-//            }
-//            Text(
-//                "Volume keys trim WPM ±10 while the prompter is on screen. Bluetooth clickers and keyboards work out of the box — they send the same play/pause and page keys.",
-//                style = MaterialTheme.typography.bodySmall, color = Outline
-//            )
-//        }
     }
 }
 
@@ -304,13 +291,3 @@ private fun ToggleRow(name: String, sub: String, checked: Boolean, onChange: (Bo
     }
 }
 
-@Composable
-private fun RemoteChip(label: String, active: Boolean) {
-    Box(
-        Modifier.clip(RoundedCornerShape(100.dp))
-            .border(1.dp, if (active) Lime else OutlineVariant, RoundedCornerShape(100.dp))
-            .padding(horizontal = 14.dp, vertical = 7.dp)
-    ) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = if (active) Lime else MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}

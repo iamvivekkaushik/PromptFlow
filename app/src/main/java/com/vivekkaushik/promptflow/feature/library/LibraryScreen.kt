@@ -50,6 +50,9 @@ import com.vivekkaushik.promptflow.ui.theme.Sora
 import com.vivekkaushik.promptflow.ui.theme.SurfaceContainer
 import com.vivekkaushik.promptflow.ui.theme.SurfaceContainerHigh
 import com.vivekkaushik.promptflow.ui.theme.Warning
+import com.vivekkaushik.promptflow.ui.theme.Record
+import com.vivekkaushik.promptflow.ui.components.PFIcon
+import com.vivekkaushik.promptflow.R
 
 private fun estTime(words: Int, wpm: Int): String {
     if (words <= 0) return "0 s"
@@ -92,11 +95,14 @@ fun LibraryScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("PromptFlow", style = MaterialTheme.typography.headlineMedium)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                PFIcon(R.drawable.ic_mark, 26.dp, Lime)
+                Text("PromptFlow", style = MaterialTheme.typography.headlineMedium)
+            }
             Box(
                 Modifier.size(34.dp).clip(CircleShape).background(SurfaceContainerHigh).clickable(onClick = onSettings),
                 contentAlignment = Alignment.Center
-            ) { Text("⚙", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 15.sp) }
+            ) { PFIcon(R.drawable.ic_tune, 19.dp, MaterialTheme.colorScheme.onSurfaceVariant) }
         }
 
         // Search pill
@@ -108,6 +114,8 @@ fun LibraryScreen(
                 .padding(horizontal = 20.dp, vertical = 13.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            PFIcon(R.drawable.ic_search, 18.dp, Outline)
+            Spacer(Modifier.width(12.dp))
             Box(Modifier.weight(1f)) {
                 BasicTextField(
                     value = query,
@@ -158,7 +166,12 @@ fun LibraryScreen(
                         Modifier.clip(RoundedCornerShape(100.dp)).background(Lime)
                             .clickable { onOpenStudio(continueScript) }
                             .padding(horizontal = 20.dp, vertical = 10.dp)
-                    ) { Text("▶ Resume in Studio", fontFamily = Sora, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = OnLime) }
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                            PFIcon(R.drawable.ic_play, 15.dp, OnLime)
+                            Text("Resume in Studio", fontFamily = Sora, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = OnLime)
+                        }
+                    }
                     Box(
                         Modifier.clip(RoundedCornerShape(100.dp))
                             .background(Color.Transparent)
@@ -180,7 +193,7 @@ fun LibraryScreen(
                 Box(
                     Modifier.size(40.dp).clip(RoundedCornerShape(14.dp)).background(Lime),
                     contentAlignment = Alignment.Center
-                ) { Text("+", fontFamily = Sora, fontSize = 24.sp, color = OnLime) }
+                ) { PFIcon(R.drawable.ic_plus, 22.dp, OnLime) }
                 Spacer(Modifier.height(12.dp))
                 Text("New script", style = MaterialTheme.typography.titleSmall)
                 Text("Blank draft", style = MaterialTheme.typography.bodySmall, color = Outline)
@@ -191,7 +204,7 @@ fun LibraryScreen(
                 Box(
                     Modifier.size(40.dp).clip(RoundedCornerShape(14.dp)).background(SurfaceContainerHigh),
                     contentAlignment = Alignment.Center
-                ) { Text("↓", fontFamily = Sora, fontSize = 18.sp, color = Lime) }
+                ) { PFIcon(R.drawable.ic_import, 21.dp, Lime) }
                 Spacer(Modifier.height(12.dp))
                 Text("Import", style = MaterialTheme.typography.titleSmall)
                 Text(".txt .docx .pdf .md · from device", style = MaterialTheme.typography.bodySmall, color = Outline)
@@ -211,12 +224,14 @@ fun LibraryScreen(
                     fontFamily = PlexMono, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = 1.5.sp,
                     color = Outline,
                 )
-                Text(
-                    "View all →",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Lime,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.clickable(onClick = onViewAll)
-                )
+                ) {
+                    Text("View all", style = MaterialTheme.typography.labelMedium, color = Lime)
+                    PFIcon(R.drawable.ic_chevron, 13.dp, Lime)
+                }
             }
             if (scripts.isEmpty()) {
                 Text(
@@ -262,12 +277,18 @@ fun LibraryScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             BentoCard(Modifier.weight(1f).fillMaxHeight(), onClick = { continueScript?.let(onOpenStudio) }) {
-                Text("◉ Quick record", style = MaterialTheme.typography.titleSmall)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PFIcon(R.drawable.ic_record, 17.dp, Record)
+                    Text("Quick record", style = MaterialTheme.typography.titleSmall)
+                }
                 Spacer(Modifier.height(4.dp))
                 Text("Studio · 4K · prompter on", style = MaterialTheme.typography.bodySmall, color = Outline)
             }
             BentoCard(Modifier.weight(1f).fillMaxHeight(), onClick = onSettings) {
-                Text("Aa Typography", style = MaterialTheme.typography.titleSmall)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PFIcon(R.drawable.ic_type, 18.dp, Lime)
+                    Text("Typography", style = MaterialTheme.typography.titleSmall)
+                }
                 Spacer(Modifier.height(4.dp))
                 Text("Size, weight, colors, mirror", style = MaterialTheme.typography.bodySmall, color = Outline)
             }
