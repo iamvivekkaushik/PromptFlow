@@ -1,0 +1,68 @@
+default_platform(:android)
+
+platform :android do
+  desc "Run unit tests"
+  lane :test do
+    gradle(task: "testDebugUnitTest")
+  end
+
+  desc "Build a signed release bundle (.aab). Needs keystore.properties."
+  lane :build do |options|
+    gradle(
+      task: "clean bundleRelease",
+      properties: options[:version_code] ? { "versionCode" => options[:version_code] } : {}
+    )
+  end
+
+  desc "Upload to the internal testing track"
+  lane :internal do
+    release_to(track: "internal")
+  end
+
+  desc "Upload to the closed beta track"
+  lane :beta do
+    release_to(track: "beta")
+  end
+
+  desc "Promote the current internal build to production (no rebuild)"
+  lane :promote do
+    upload_to_play_store(
+      track: "internal",
+      track_promote_to: "production",
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Build and upload straight to production"
+  lane :production do
+    release_to(track: "production")
+  end
+
+  # Shared: test → next versionCode from Play → build → upload
+  private_lane :release_to do |options|
+    test
+    version_code = next_version_code
+    build(version_code: version_code)
+    upload_to_play_store(
+      track: options[:track],
+      aab: "app/build/outputs/bundle/release/app-release.aab",
+      release_status: options[:track] == "production" ? "completed" : "draft",
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+    UI.success("Uploaded versionCode #{version_code} to #{options[:track]}")
+  end
+
+  # Highest versionCode across all tracks + 1; falls back to 1 for a brand-new app.
+  private_lane :next_version_code do
+    codes = %w[production beta internal].flat_map do |t|
+      google_play_track_version_codes(track: t) rescue []
+    end
+    (codes.max || 0) + 1
+  end
+end

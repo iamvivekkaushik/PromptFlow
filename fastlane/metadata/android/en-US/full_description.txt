@@ -1,0 +1,9 @@
+PromptFlow is an on-device teleprompter for creators.
+
+• Script library — write, import (.txt, .docx, .pdf, .md) and organize scripts
+• In-app studio — record up to 4K with the prompter floating over your camera preview
+• Floating overlay — run the prompter over any camera app
+• Voice sync — scrolling follows your speaking pace
+• Full typography control — size, weight, fonts, colors, mirroring for beam-splitter rigs
+• Hardware remotes — volume keys, Bluetooth clickers and keyboards
+• Private by design — everything stays on your device, no account needed

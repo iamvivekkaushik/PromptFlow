@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PromptFlow — Privacy Policy</title>
+<style>
+  :root{
+    --bg:#0C0E0A; --surface:#1C1F17; --text:#E4E3DB; --muted:#C6C8BA;
+    --outline:#90927F; --lime:#C7E86C; --border:#363B2D;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:16px/1.7 "IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  }
+  main{max-width:720px; margin:0 auto; padding:48px 24px 72px}
+  .brand{display:flex; align-items:center; gap:10px; margin-bottom:6px}
+  .brand svg{color:var(--lime); flex:none}
+  .brand span{font:700 22px "Sora","IBM Plex Sans",sans-serif}
+  h1{font:700 34px/1.2 "Sora","IBM Plex Sans",sans-serif; margin:18px 0 6px}
+  .meta{font:500 13px "IBM Plex Mono",monospace; color:var(--outline); margin-bottom:36px}
+  h2{font:600 20px "Sora","IBM Plex Sans",sans-serif; color:var(--lime); margin:40px 0 12px}
+  p,li{color:var(--muted)}
+  strong{color:var(--text); font-weight:600}
+  ul{padding-left:22px; margin:12px 0}
+  li{margin:6px 0}
+  a{color:var(--lime); text-decoration:none}
+  a:hover{text-decoration:underline}
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding:18px 22px; margin:24px 0;
+  }
+  .card p{margin:0}
+  footer{margin-top:56px; padding-top:20px; border-top:1px solid var(--border);
+    font-size:13px; color:var(--outline)}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <path d="M10 2.5l2 2.6 2-2.6z" fill="currentColor" stroke="none"/>
+      <rect x="2.5" y="6" width="19" height="15.5" rx="4"/>
+      <line x1="6.5" y1="11" x2="17.5" y2="11"/>
+      <line x1="6.5" y1="15" x2="14" y2="15"/>
+      <line x1="6.5" y1="18.6" x2="11" y2="18.6"/>
+    </svg>
+    <span>PromptFlow</span>
+  </div>
+  <h1>Privacy Policy</h1>
+  <p class="meta">Effective date: 27 August 2026</p>
+
+  <div class="card">
+    <p><strong>The short version:</strong> PromptFlow works entirely on your device.
+    It has no accounts, no analytics, no ads, and no servers of its own.
+    Your scripts and recordings never leave your phone unless you share them yourself.</p>
+  </div>
+
+  <h2>Data we collect</h2>
+  <p><strong>None.</strong> PromptFlow does not collect, transmit, sell, or share any
+  personal data. There is no sign-up, no analytics SDK, no advertising SDK, and no
+  crash-reporting service embedded in the app.</p>
+
+  <h2>Data stored on your device</h2>
+  <ul>
+    <li><strong>Scripts</strong> you write or import (.txt, .docx, .pdf, .md) are stored in a
+    local database on your device only.</li>
+    <li><strong>Settings</strong> (font, colors, scroll speed, and similar preferences) are stored
+    locally on your device.</li>
+    <li><strong>Video recordings</strong> made in the Studio are saved to your device's gallery
+    under <em>Movies/PromptFlow</em>. They are yours; the app never uploads them.</li>
+  </ul>
+  <p>Uninstalling the app, or clearing its storage in Android settings, permanently deletes the
+  scripts and settings it stores. Recordings remain in your gallery until you delete them.</p>
+
+  <h2>Permissions and why they're needed</h2>
+  <ul>
+    <li><strong>Camera</strong> — to show the viewfinder and record video in the Studio. Used only
+    while the Studio is open.</li>
+    <li><strong>Microphone</strong> — to record audio with your videos, and (if you enable Voice
+    Sync) to match the prompter's scrolling to your speaking pace.</li>
+    <li><strong>Display over other apps</strong> — to float the prompter overlay above your camera
+    app. The overlay shows your script; it does not read the screen.</li>
+    <li><strong>Notifications</strong> — a single ongoing notification while the overlay is running,
+    as required by Android.</li>
+    <li><strong>Files</strong> — only the documents you explicitly pick when importing a script are
+    read; the app has no broad file access.</li>
+  </ul>
+
+  <h2>Voice Sync and speech recognition</h2>
+  <p>Voice Sync uses your device's built-in Android speech recognition service to follow your
+  reading position. Depending on your device and settings, that system service (typically provided
+  by Google) may process audio on-device or via its own servers, under its provider's privacy
+  policy. PromptFlow itself only receives the recognized words to align scrolling and does not
+  store or transmit them. Voice Sync is optional and can be turned off in Settings.</p>
+
+  <h2>Fonts</h2>
+  <p>Prompter fonts are fetched through Android's Downloadable Fonts service (Google Play
+  services) the first time you select them, then cached on your device. The font request contains
+  no personal data.</p>
+
+  <h2>Children</h2>
+  <p>PromptFlow is not directed at children under 13 and collects no data from anyone.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If the app's data practices ever change, this page will be updated and the effective date
+  revised before the change ships.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about this policy: <a href="mailto:me@vivekkaushik.com">me@vivekkaushik.com</a></p>
+
+  <footer>PromptFlow · on-device teleprompter · this policy applies to the Android app
+  distributed via Google Play.</footer>
+</main>
+</body>
+</html>

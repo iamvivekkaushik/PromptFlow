@@ -1,0 +1,6 @@
+# Google Play service-account JSON key.
+# Create one in Play Console → Setup → API access, download the JSON,
+# save it as fastlane/play-store-key.json (gitignored) or point
+# PLAY_JSON_KEY at it.
+json_key_file(ENV["PLAY_JSON_KEY"] || "fastlane/play-store-key.json")
+package_name("com.vivekkaushik.promptflow")

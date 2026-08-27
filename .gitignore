@@ -13,3 +13,14 @@
 .externalNativeBuild
 .cxx
 local.properties
+/app/release/*
+
+# Release signing & Play credentials — never commit
+keystore.properties
+*.keystore
+*.jks
+fastlane/play-store-key.json
+fastlane/report.xml
+fastlane/README.md
+Gemfile.lock
+vendor/bundle/
