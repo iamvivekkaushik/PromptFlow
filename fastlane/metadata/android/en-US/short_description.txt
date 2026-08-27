@@ -1,1 +1,1 @@
-Teleprompter with 4K studio recording and a floating overlay.
+Teleprompter that floats over any camera app — record in 4K with voice sync.

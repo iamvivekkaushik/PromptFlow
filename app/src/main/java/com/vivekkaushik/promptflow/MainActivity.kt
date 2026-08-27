@@ -162,7 +162,15 @@ private fun AppNavHost(nav: NavHostController, startOverlay: (Script) -> Unit) {
         }
         composable("settings") {
             androidx.compose.foundation.layout.Box(Modifier.safeDrawingPadding()) {
-                SettingsScreen(onBack = { nav.popBackStack() })
+                SettingsScreen(
+                    onBack = { nav.popBackStack() },
+                    onOpenLicenses = { nav.navigate("licenses") },
+                )
+            }
+        }
+        composable("licenses") {
+            androidx.compose.foundation.layout.Box(Modifier.safeDrawingPadding()) {
+                com.vivekkaushik.promptflow.feature.settings.LicensesScreen(onBack = { nav.popBackStack() })
             }
         }
     }

@@ -69,7 +69,7 @@ private val SWATCHES = listOf(0xFFE4E3DB, 0xFFC7E86C, 0xFFFFB94E, 0xFF7FD4FF)
 
 /** Prompter settings: typography, color, mirror & smart scroll, hardware remotes (spec screen 4). */
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onOpenLicenses: () -> Unit = {}) {
     val settings by Graph.settings.settings.collectAsState(initial = PrompterSettings())
     val scope = rememberCoroutineScope()
     val store = Graph.settings
@@ -231,6 +231,30 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
         }
 
+        // ABOUT
+        SettingsCard("ABOUT") {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val version = remember {
+                runCatching {
+                    context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                }.getOrNull() ?: "1.0"
+            }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Version", style = MaterialTheme.typography.bodyLarge)
+                Spacer(Modifier.weight(1f))
+                Text(version, fontFamily = PlexMono, fontSize = 12.sp, color = Outline)
+            }
+            Row(
+                Modifier.fillMaxWidth().clickable(onClick = onOpenLicenses),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Open-source libraries", style = MaterialTheme.typography.bodyLarge)
+                    Text("Licenses & attributions", style = MaterialTheme.typography.bodySmall, color = Outline)
+                }
+                PFIcon(R.drawable.ic_chevron, 14.dp, Outline)
+            }
+        }
     }
 }
 

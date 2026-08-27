@@ -1,9 +1,27 @@
-PromptFlow is an on-device teleprompter for creators.
+Stop looking away from the lens. PromptFlow puts your script right where you're filming — floating over any camera app, or inside its own 4K recording studio — and scrolls at the pace you actually speak.
 
-• Script library — write, import (.txt, .docx, .pdf, .md) and organize scripts
-• In-app studio — record up to 4K with the prompter floating over your camera preview
-• Floating overlay — run the prompter over any camera app
-• Voice sync — scrolling follows your speaking pace
-• Full typography control — size, weight, fonts, colors, mirroring for beam-splitter rigs
-• Hardware remotes — volume keys, Bluetooth clickers and keyboards
-• Private by design — everything stays on your device, no account needed
+FLOATING OVERLAY
+Run the prompter over any app: your camera, Instagram, TikTok, a video call. Drag it anywhere, pinch to resize, dial in the opacity, or collapse it to a tiny bubble between takes. Your favorite camera app keeps doing the filming — PromptFlow just feeds you the lines.
+
+BUILT-IN 4K STUDIO
+Prefer an all-in-one? Record straight from PromptFlow with the script hovering under the lens, so your eyes stay on camera. Up to 4K at 30 or 60 fps, 16:9 / 4:3 / 1:1 framing, front or rear camera, live mic level — takes land in your gallery, ready to edit.
+
+VOICE SYNC
+The prompter listens as you read and keeps the current line in the guide band. Speed up, slow down, pause to think — the script follows you, not the other way around. Prefer a fixed pace? Set words-per-minute and adjust live while recording.
+
+YOUR SCRIPTS, ANY SOURCE
+Write in the built-in editor or import .txt, .docx, .pdf, and .md files. Scripts keep their reading progress, estimated duration, and a recorded/draft status, so a shoot day stays organized.
+
+MADE FOR REAL RIGS
+• Mirror text horizontally or vertically for beam-splitter teleprompter glass
+• Volume keys, Bluetooth clickers, and keyboards control play/pause and speed
+• Start-delay countdown so you can get in position
+• Tap or double-tap to pause anywhere
+
+TYPE IT YOUR WAY
+Adjustable size, line spacing, and weight, a library of fonts (plus your own .ttf/.otf files), and text colors tuned for readability over a live viewfinder.
+
+PRIVATE BY DESIGN
+No account. No cloud. No analytics. Scripts and settings live only on your device, and recordings save to your own gallery. The app doesn't even use the internet — except to fetch fonts you pick.
+
+Whether you're shooting YouTube videos, course lessons, sales updates, or wedding speeches: write it once, read it naturally, nail the take.
