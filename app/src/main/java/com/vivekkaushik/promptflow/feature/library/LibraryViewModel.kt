@@ -41,6 +41,10 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun setRecorded(id: Long, recorded: Boolean) {
+        viewModelScope.launch { Graph.db.scripts().setRecorded(id, recorded) }
+    }
+
     fun newScript(onCreated: (Long) -> Unit) {
         viewModelScope.launch {
             val now = System.currentTimeMillis()

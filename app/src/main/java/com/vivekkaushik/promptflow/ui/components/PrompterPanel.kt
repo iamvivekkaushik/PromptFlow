@@ -25,7 +25,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -96,7 +97,7 @@ fun PrompterViewport(
     settings: PrompterSettings,
     modifier: Modifier = Modifier,
     fontScale: Float = 1f,
-    guideBandFraction: Float = 0.26f,
+    guideBandFraction: Float = 0.06f,
     guideBandHeightDp: Int = 44,
     scrimColor: Color = Color(0xFF12140F),
     horizontalPaddingDp: Int = 22,
@@ -107,23 +108,35 @@ fun PrompterViewport(
     BoxWithConstraints(
         modifier = modifier
             .clipToBounds()
-            .pointerInput(settings.tapPause) {
-                detectTapGestures(onDoubleTap = { if (settings.tapPause) engine.togglePlay() })
+            .pointerInput(settings.tapPause, settings.startDelaySec) {
+                detectTapGestures(onDoubleTap = { if (settings.tapPause) engine.togglePlay(settings.startDelaySec) })
             }
     ) {
         val bandTop = maxHeight * guideBandFraction
 
-        // Scrolling text — starts at the guide band, translated up as the clock runs
+        // Scrolling text — starts at the guide band, translated up as the clock runs.
+        // Measured with UNBOUNDED height: the script is taller than the viewport, and a
+        // bounded measure would truncate the text to the panel and misreport contentHeight.
         Column(
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = horizontalPaddingDp.dp)
                 .graphicsLayer {
                     translationY = bandTop.toPx() - state.offsetPx
                     scaleX = if (settings.mirrorH) -1f else 1f
                     scaleY = if (settings.mirrorV) -1f else 1f
                 }
-                .onGloballyPositioned { engine.contentHeightPx = it.size.height.toFloat() }
+                .layout { measurable, constraints ->
+                    val placeable = measurable.measure(
+                        constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity)
+                    )
+                    engine.contentHeightPx = placeable.height.toFloat()
+                    // Report a size within constraints: exceeding them makes Compose
+                    // auto-center the oversized content (text would start mid-script).
+                    layout(placeable.width, placeable.height.coerceAtMost(constraints.maxHeight)) {
+                        placeable.place(0, 0)
+                    }
+                }
+                .padding(horizontal = horizontalPaddingDp.dp)
         ) {
             state.text.split('\n').filter { it.isNotBlank() }.forEach { line ->
                 Text(
@@ -150,8 +163,8 @@ fun PrompterViewport(
             Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .fillMaxHeight(0.26f)
-                .background(Brush.verticalGradient(0.2f to scrimColor, 1f to Color.Transparent))
+                .fillMaxHeight(0.08f)
+                .background(Brush.verticalGradient(0f to scrimColor, 1f to Color.Transparent))
         )
         Box(
             Modifier
@@ -160,6 +173,21 @@ fun PrompterViewport(
                 .fillMaxHeight(0.30f)
                 .background(Brush.verticalGradient(0f to Color.Transparent, 0.9f to scrimColor))
         )
+
+        // Start-delay countdown
+        if (state.countdown > 0) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = state.countdown.toString(),
+                    style = TextStyle(
+                        fontFamily = com.vivekkaushik.promptflow.ui.theme.Sora,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = (64 * fontScale).sp,
+                        color = Lime,
+                    )
+                )
+            }
+        }
 
         // Lens caret — marks the camera axis
         Canvas(Modifier.align(Alignment.TopCenter).size(width = 16.dp, height = 8.dp)) {

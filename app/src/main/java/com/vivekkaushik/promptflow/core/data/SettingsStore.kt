@@ -23,6 +23,7 @@ data class PrompterSettings(
     val tapPause: Boolean = true,
     val wpm: Int = 140,
     val overlayOpacity: Int = 62,      // 15–95%
+    val startDelaySec: Int = 0,        // countdown before the prompter starts scrolling
 )
 
 private val Context.dataStore by preferencesDataStore(name = "prompter_settings")
@@ -41,6 +42,7 @@ class SettingsStore(private val context: Context) {
         val tapPause = booleanPreferencesKey("tap_pause")
         val wpm = intPreferencesKey("wpm")
         val opacity = intPreferencesKey("overlay_opacity")
+        val startDelay = intPreferencesKey("start_delay")
     }
 
     val settings: Flow<PrompterSettings> = context.dataStore.data.map { p ->
@@ -58,6 +60,7 @@ class SettingsStore(private val context: Context) {
             tapPause = p[K.tapPause] ?: d.tapPause,
             wpm = p[K.wpm] ?: d.wpm,
             overlayOpacity = p[K.opacity] ?: d.overlayOpacity,
+            startDelaySec = p[K.startDelay] ?: d.startDelaySec,
         )
     }
 
@@ -73,4 +76,5 @@ class SettingsStore(private val context: Context) {
     suspend fun setTapPause(v: Boolean) = context.dataStore.edit { it[K.tapPause] = v }
     suspend fun setWpm(v: Int) = context.dataStore.edit { it[K.wpm] = v }
     suspend fun setOverlayOpacity(v: Int) = context.dataStore.edit { it[K.opacity] = v }
+    suspend fun setStartDelay(v: Int) = context.dataStore.edit { it[K.startDelay] = v }
 }

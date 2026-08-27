@@ -38,7 +38,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+        )
         setContent {
             PromptFlowTheme {
                 val nav = rememberNavController()
@@ -126,6 +129,7 @@ private fun AppNavHost(nav: NavHostController, startOverlay: (Script) -> Unit) {
                     onOpenOverlay = startOverlay,
                     onEdit = { id -> nav.navigate("editor/$id") },
                     onSettings = { nav.navigate("settings") },
+                    onViewAll = { nav.navigate("scripts") },
                 )
             }
         }
@@ -139,12 +143,22 @@ private fun AppNavHost(nav: NavHostController, startOverlay: (Script) -> Unit) {
                     scriptId = id,
                     onBack = { nav.popBackStack() },
                     onOpenStudio = { script -> Graph.engine.load(script); nav.navigate("studio") },
+                    onOpenOverlay = startOverlay,
                 )
             }
         }
         composable("studio") {
             // Edge-to-edge, no safe padding — camera surface fills the screen (spec §02)
             StudioScreen(onBack = { nav.popBackStack() })
+        }
+        composable("scripts") {
+            androidx.compose.foundation.layout.Box(Modifier.safeDrawingPadding()) {
+                com.vivekkaushik.promptflow.feature.library.AllScriptsScreen(
+                    onBack = { nav.popBackStack() },
+                    onEdit = { id -> nav.navigate("editor/$id") },
+                    onOpenStudio = { script -> Graph.engine.load(script); nav.navigate("studio") },
+                )
+            }
         }
         composable("settings") {
             androidx.compose.foundation.layout.Box(Modifier.safeDrawingPadding()) {

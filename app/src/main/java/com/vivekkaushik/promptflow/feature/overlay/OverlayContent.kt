@@ -162,7 +162,7 @@ fun OverlayContent(
                     engine = engine,
                     settings = settings,
                     fontScale = 0.7f,
-                    guideBandFraction = 0.22f,
+                    guideBandFraction = 0.06f,
                     guideBandHeightDp = 34,
                     scrimColor = Color(0xFF0A0C08),
                     horizontalPaddingDp = 14,
@@ -189,9 +189,14 @@ fun OverlayContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Box(
-                    Modifier.size(34.dp).clip(CircleShape).background(Lime).clickable { engine.togglePlay() },
+                    Modifier.size(34.dp).clip(CircleShape).background(Lime).clickable { engine.togglePlay(settings.startDelaySec) },
                     contentAlignment = Alignment.Center
-                ) { Text(if (engineState.playing) "❚❚" else "▶", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = OnLime) }
+                ) {
+                    Text(
+                        if (engineState.playing || engineState.countdown > 0) "❚❚" else "▶",
+                        fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = OnLime
+                    )
+                }
                 Box(
                     Modifier.size(30.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.08f)).clickable { engine.rewind() },
                     contentAlignment = Alignment.Center

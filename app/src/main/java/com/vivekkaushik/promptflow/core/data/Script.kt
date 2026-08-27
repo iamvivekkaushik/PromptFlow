@@ -10,6 +10,7 @@ data class Script(
     val body: String,
     val source: String = "On device",   // "On device" | "Imported"
     val progress: Float = 0f,           // 0..1 read position
+    val recorded: Boolean = false,      // true once a Studio take was saved with this script
     val createdAt: Long,
     val updatedAt: Long,
 ) {

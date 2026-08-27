@@ -200,23 +200,50 @@ fun SettingsScreen(onBack: () -> Unit) {
             ToggleRow("Mirror horizontal", "For beam-splitter glass rigs", settings.mirrorH) { scope.launch { store.setMirrorH(it) } }
             ToggleRow("Mirror vertical", "For overhead rig mounts", settings.mirrorV) { scope.launch { store.setMirrorV(it) } }
             ToggleRow("Double-tap to pause", "Anywhere on the prompter text", settings.tapPause) { scope.launch { store.setTapPause(it) } }
+            // Start delay: countdown shown in the prompter before scrolling begins
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.width(88.dp)) {
+                    Text("Start delay", style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Countdown before scroll", style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp), color = Outline)
+                }
+                Row(
+                    Modifier.weight(1f).clip(RoundedCornerShape(100.dp)).border(1.dp, OutlineVariant, RoundedCornerShape(100.dp))
+                ) {
+                    listOf(0, 3, 5, 10).forEach { sec ->
+                        val selected = settings.startDelaySec == sec
+                        Box(
+                            Modifier.weight(1f)
+                                .background(if (selected) LimeContainer else Color.Transparent)
+                                .clickable { scope.launch { store.setStartDelay(sec) } }
+                                .padding(vertical = 9.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                if (sec == 0) "Off" else "${sec}s",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (selected) OnLimeContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         // HARDWARE REMOTES
-        SettingsCard("HARDWARE REMOTES") {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                RemoteChip("✓ Volume keys", active = true)
-                RemoteChip("BT clicker", active = false)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                RemoteChip("Wear OS", active = false)
-                RemoteChip("Keyboard", active = false)
-            }
-            Text(
-                "Volume keys trim WPM ±10 while the prompter is on screen. Bluetooth clickers and keyboards work out of the box — they send the same play/pause and page keys.",
-                style = MaterialTheme.typography.bodySmall, color = Outline
-            )
-        }
+//        SettingsCard("HARDWARE REMOTES") {
+//            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+//                RemoteChip("✓ Volume keys", active = true)
+//                RemoteChip("BT clicker", active = false)
+//            }
+//            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+//                RemoteChip("Wear OS", active = false)
+//                RemoteChip("Keyboard", active = false)
+//            }
+//            Text(
+//                "Volume keys trim WPM ±10 while the prompter is on screen. Bluetooth clickers and keyboards work out of the box — they send the same play/pause and page keys.",
+//                style = MaterialTheme.typography.bodySmall, color = Outline
+//            )
+//        }
     }
 }
 
@@ -234,11 +261,19 @@ private fun SettingsCard(title: String, content: @Composable androidx.compose.fo
 }
 
 @Composable
-private fun SliderRow(label: String, value: Float, range: ClosedFloatingPointRange<Float>, readout: String, onChange: (Float) -> Unit) {
+private fun SliderRow(
+    label: String,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    readout: String,
+    onFinished: (() -> Unit)? = null,
+    onChange: (Float) -> Unit,
+) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(label, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(88.dp))
         Slider(
             value = value, onValueChange = onChange, valueRange = range,
+            onValueChangeFinished = onFinished,
             modifier = Modifier.weight(1f),
             colors = SliderDefaults.colors(thumbColor = Lime, activeTrackColor = Lime, inactiveTrackColor = SurfaceContainerHigh)
         )

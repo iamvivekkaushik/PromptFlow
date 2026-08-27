@@ -20,6 +20,12 @@ interface ScriptDao {
     @Query("UPDATE scripts SET progress = :progress WHERE id = :id")
     suspend fun updateProgress(id: Long, progress: Float)
 
+    @Query("UPDATE scripts SET recorded = 1 WHERE id = :id")
+    suspend fun markRecorded(id: Long)
+
+    @Query("UPDATE scripts SET recorded = :recorded WHERE id = :id")
+    suspend fun setRecorded(id: Long, recorded: Boolean)
+
     @Query("DELETE FROM scripts WHERE id = :id")
     suspend fun delete(id: Long)
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -65,6 +66,7 @@ fun LibraryScreen(
     onOpenOverlay: (Script) -> Unit,
     onEdit: (Long) -> Unit,
     onSettings: () -> Unit,
+    onViewAll: () -> Unit,
 ) {
     val vm: LibraryViewModel = viewModel()
     val scripts by vm.scripts.collectAsState()
@@ -98,22 +100,32 @@ fun LibraryScreen(
         }
 
         // Search pill
-        Box(
+        Row(
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(100.dp))
                 .background(SurfaceContainer)
-                .padding(horizontal = 20.dp, vertical = 13.dp)
+                .padding(horizontal = 20.dp, vertical = 13.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            BasicTextField(
-                value = query,
-                onValueChange = vm::setQuery,
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                cursorBrush = SolidColor(Lime),
-                modifier = Modifier.fillMaxWidth()
-            )
-            if (query.isEmpty()) Text("Search scripts…", style = MaterialTheme.typography.bodyLarge, color = Outline)
+            Box(Modifier.weight(1f)) {
+                BasicTextField(
+                    value = query,
+                    onValueChange = vm::setQuery,
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                    cursorBrush = SolidColor(Lime),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (query.isEmpty()) Text("Search scripts…", style = MaterialTheme.typography.bodyLarge, color = Outline)
+            }
+            if (query.isNotEmpty()) {
+                Box(
+                    Modifier.size(22.dp).clip(CircleShape).background(SurfaceContainerHigh)
+                        .clickable { vm.setQuery("") },
+                    contentAlignment = Alignment.Center
+                ) { Text("✕", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
         }
         Spacer(Modifier.height(16.dp))
 
@@ -160,8 +172,11 @@ fun LibraryScreen(
         }
 
         // New script / Import
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            BentoCard(Modifier.weight(1f), onClick = { vm.newScript { id -> onEdit(id) } }) {
+        Row(
+            Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            BentoCard(Modifier.weight(1f).fillMaxHeight(), onClick = { vm.newScript { id -> onEdit(id) } }) {
                 Box(
                     Modifier.size(40.dp).clip(RoundedCornerShape(14.dp)).background(Lime),
                     contentAlignment = Alignment.Center
@@ -170,7 +185,7 @@ fun LibraryScreen(
                 Text("New script", style = MaterialTheme.typography.titleSmall)
                 Text("Blank draft", style = MaterialTheme.typography.bodySmall, color = Outline)
             }
-            BentoCard(Modifier.weight(1f), onClick = {
+            BentoCard(Modifier.weight(1f).fillMaxHeight(), onClick = {
                 importLauncher.launch(com.vivekkaushik.promptflow.core.importer.ScriptImporter.MIME_TYPES)
             }) {
                 Box(
@@ -186,12 +201,23 @@ fun LibraryScreen(
 
         // Recent list
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(SurfaceContainer).padding(vertical = 8.dp)) {
-            Text(
-                "RECENT",
-                fontFamily = PlexMono, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = 1.5.sp,
-                color = Outline,
-                modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 12.dp, bottom = 6.dp)
-            )
+            Row(
+                Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 12.dp, bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "RECENT",
+                    fontFamily = PlexMono, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = 1.5.sp,
+                    color = Outline,
+                )
+                Text(
+                    "View all →",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Lime,
+                    modifier = Modifier.clickable(onClick = onViewAll)
+                )
+            }
             if (scripts.isEmpty()) {
                 Text(
                     if (query.isBlank()) "No scripts yet — create or import one." else "No matches for \"$query\".",
@@ -231,13 +257,16 @@ fun LibraryScreen(
         Spacer(Modifier.height(12.dp))
 
         // Quick record / Typography shortcuts
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            BentoCard(Modifier.weight(1f), onClick = { continueScript?.let(onOpenStudio) }) {
+        Row(
+            Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            BentoCard(Modifier.weight(1f).fillMaxHeight(), onClick = { continueScript?.let(onOpenStudio) }) {
                 Text("◉ Quick record", style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(4.dp))
                 Text("Studio · 4K · prompter on", style = MaterialTheme.typography.bodySmall, color = Outline)
             }
-            BentoCard(Modifier.weight(1f), onClick = onSettings) {
+            BentoCard(Modifier.weight(1f).fillMaxHeight(), onClick = onSettings) {
                 Text("Aa Typography", style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(4.dp))
                 Text("Size, weight, colors, mirror", style = MaterialTheme.typography.bodySmall, color = Outline)

@@ -1,6 +1,7 @@
 package com.vivekkaushik.promptflow.feature.editor
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,7 +46,12 @@ import kotlinx.coroutines.flow.debounce
 /** Script editor with live word count and est. duration = wordCount / WPM (spec §04). */
 @OptIn(FlowPreview::class)
 @Composable
-fun EditorScreen(scriptId: Long, onBack: () -> Unit, onOpenStudio: (Script) -> Unit) {
+fun EditorScreen(
+    scriptId: Long,
+    onBack: () -> Unit,
+    onOpenStudio: (Script) -> Unit,
+    onOpenOverlay: (Script) -> Unit,
+) {
     var script by remember { mutableStateOf<Script?>(null) }
     var title by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
@@ -75,7 +81,7 @@ fun EditorScreen(scriptId: Long, onBack: () -> Unit, onOpenStudio: (Script) -> U
 
     val words = body.split(Regex("\\s+")).count { it.isNotBlank() }
     val totalSec = if (words > 0) (words * 60.0 / settings.wpm).toInt() else 0
-    val est = "${totalSec / 60} min ${if (totalSec % 60 < 10) "0" else ""}${totalSec % 60} s"
+    val est = "%d:%02d".format(totalSec / 60, totalSec % 60)
 
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Row(
@@ -88,12 +94,20 @@ fun EditorScreen(scriptId: Long, onBack: () -> Unit, onOpenStudio: (Script) -> U
                 contentAlignment = Alignment.Center
             ) { Text("←", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             Text(
-                "$words words · $est",
+                "$words w · $est",
                 fontFamily = PlexMono, fontSize = 12.sp, color = Outline,
                 maxLines = 1,
                 modifier = Modifier.weight(1f)
             )
             script?.let { s ->
+                Box(
+                    Modifier.clip(RoundedCornerShape(100.dp))
+                        .border(1.dp, Lime.copy(alpha = 0.5f), RoundedCornerShape(100.dp))
+                        .clickable { onOpenOverlay(s.copy(title = title, body = body)) }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text("Overlay", style = MaterialTheme.typography.labelLarge, color = Lime)
+                }
                 Box(
                     Modifier.clip(RoundedCornerShape(100.dp)).background(Lime)
                         .clickable { onOpenStudio(s.copy(title = title, body = body)) }

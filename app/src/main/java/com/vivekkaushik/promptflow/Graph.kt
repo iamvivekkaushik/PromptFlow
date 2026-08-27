@@ -36,6 +36,12 @@ object Graph {
 
     fun persistWpm(wpm: Int) = appScope.launch { settings.setWpm(wpm) }
 
+    /** Flag the engine's current script as having a saved Studio take. */
+    fun markCurrentScriptRecorded() {
+        val id = engine.state.value.scriptId
+        if (id > 0) appScope.launch { db.scripts().markRecorded(id) }
+    }
+
     fun persistProgress() {
         val s = engine.state.value
         if (s.scriptId > 0) {

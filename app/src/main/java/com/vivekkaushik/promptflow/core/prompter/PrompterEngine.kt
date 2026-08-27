@@ -26,6 +26,8 @@ class PrompterEngine(scope: CoroutineScope) {
         val playing: Boolean = false,
         val offsetPx: Float = 0f,
         val wpm: Int = 140,
+        /** Seconds left on the start-delay countdown; 0 = no countdown running. */
+        val countdown: Int = 0,
     )
 
     private val _state = MutableStateFlow(State())
@@ -50,6 +52,7 @@ class PrompterEngine(scope: CoroutineScope) {
     // Voice-sync steering: velocity multiplier eased toward this, clamped ±40%
     @Volatile private var voiceMultiplier = 1f
     private var currentSpeedPxSec = 0f
+    private var countdownRemaining = 0f
 
     init {
         scope.launch {
@@ -60,9 +63,18 @@ class PrompterEngine(scope: CoroutineScope) {
                 val dt = ((now - last) / 1e9f).coerceAtMost(0.1f)
                 last = now
                 val s = _state.value
-                if (s.playing && contentHeightPx > 0f) {
+                if (countdownRemaining > 0f) {
+                    countdownRemaining -= dt
+                    if (countdownRemaining <= 0f) {
+                        countdownRemaining = 0f
+                        _state.update { it.copy(countdown = 0, playing = true) }
+                    } else {
+                        val secs = kotlin.math.ceil(countdownRemaining).toInt()
+                        if (secs != s.countdown) _state.update { it.copy(countdown = secs) }
+                    }
+                } else if (s.playing && contentHeightPx > 0f) {
                     val pxPerWord = contentHeightPx / wordCount
-                    val target = s.wpm / 60f * pxPerWord * voiceMultiplier
+                    val target = s.wpm / 60f * pxPerWord * SPEED_FACTOR * voiceMultiplier
                     // exponential ease, ~400ms time constant
                     currentSpeedPxSec += (target - currentSpeedPxSec) * min(1f, dt / 0.4f)
                     val next = s.offsetPx + currentSpeedPxSec * dt
@@ -79,24 +91,47 @@ class PrompterEngine(scope: CoroutineScope) {
     }
 
     fun load(script: Script, resumeFraction: Float = 0f) {
-        if (_state.value.scriptId == script.id && script.body == _state.value.text) return
-        tokens = tokenize(script.body)
-        contentHeightPx = 0f
-        pendingSeekFraction = resumeFraction.takeIf { it > 0f && it < 0.98f }
+        val sameScript = _state.value.scriptId == script.id && script.body == _state.value.text
+        if (!sameScript) {
+            tokens = tokenize(script.body)
+            contentHeightPx = 0f
+        }
+        // A load always restarts from the top of the script unless the caller
+        // explicitly passes a resume position (the library's Continue card).
+        val resume = resumeFraction.takeIf { it > 0f && it < 0.98f }
+        pendingSeekFraction = if (sameScript && contentHeightPx > 0f) null else resume
+        val offset = if (resume != null && sameScript && contentHeightPx > 0f) resume * contentHeightPx else 0f
+        countdownRemaining = 0f
+        voiceMultiplier = 1f
         _state.update {
             State(
                 scriptId = script.id,
                 title = script.title,
                 text = script.body,
                 wpm = it.wpm,
-                offsetPx = 0f,
+                offsetPx = offset,
             )
         }
     }
 
-    fun togglePlay() = _state.update { it.copy(playing = !it.playing) }
-    fun pause() = _state.update { it.copy(playing = false) }
-    fun rewind() { voiceMultiplier = 1f; _state.update { it.copy(offsetPx = 0f, playing = false) } }
+    /** Toggle playback. A positive [delaySec] runs a visible countdown before scrolling starts. */
+    fun togglePlay(delaySec: Int = 0) {
+        val s = _state.value
+        when {
+            s.playing || s.countdown > 0 -> {
+                countdownRemaining = 0f
+                _state.update { it.copy(playing = false, countdown = 0) }
+            }
+            delaySec > 0 -> {
+                countdownRemaining = delaySec.toFloat()
+                _state.update { it.copy(countdown = delaySec) }
+            }
+            else -> _state.update { it.copy(playing = true) }
+        }
+    }
+
+    fun pause() { countdownRemaining = 0f; _state.update { it.copy(playing = false, countdown = 0) } }
+    fun rewind() { voiceMultiplier = 1f; countdownRemaining = 0f; _state.update { it.copy(offsetPx = 0f, playing = false, countdown = 0) } }
 
     fun setWpm(v: Int) = _state.update { it.copy(wpm = v.coerceIn(WPM_MIN, WPM_MAX)) }
     fun nudgeWpm(delta: Int) = setWpm(_state.value.wpm + delta)
@@ -127,7 +162,10 @@ class PrompterEngine(scope: CoroutineScope) {
 
     companion object {
         const val WPM_MIN = 60
-        const val WPM_MAX = 240
+        const val WPM_MAX = 500
+
+        /** Scroll-speed calibration: velocity is 1× the literal words-per-minute pace. */
+        const val SPEED_FACTOR = 1f
         private const val FRAME_MS = 16L
 
         fun tokenize(text: String): List<String> =
