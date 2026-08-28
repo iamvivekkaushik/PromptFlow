@@ -8,7 +8,7 @@ on:
       track:
         description: "Play track to release to"
         type: choice
-        default: internal
+        default: production
         options: [internal, beta, production, promote]
 
 concurrency:

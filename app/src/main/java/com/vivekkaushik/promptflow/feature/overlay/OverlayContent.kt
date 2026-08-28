@@ -58,6 +58,7 @@ import com.vivekkaushik.promptflow.ui.theme.Sora
 import kotlinx.coroutines.launch
 import com.vivekkaushik.promptflow.ui.components.PFIcon
 import com.vivekkaushik.promptflow.R
+import androidx.compose.foundation.layout.widthIn
 
 /**
  * Floating window anatomy (spec §02): 32dp drag header, glass text viewport with the
@@ -138,11 +139,32 @@ fun OverlayContent(
                     repeat(3) { Box(Modifier.size(4.dp).clip(CircleShape).background(Outline)) }
                 }
                 Text(
-                    "DRAG · PINCH TO RESIZE",
+                    "DRAG · PINCH RESIZE",
                     fontFamily = PlexMono, fontWeight = FontWeight.SemiBold, fontSize = 10.sp,
                     letterSpacing = 1.sp, color = Outline,
                     modifier = Modifier.weight(1f),
                 )
+                // Live WPM — volume keys and these steppers drive the same engine value
+                Row(
+                    Modifier.clip(RoundedCornerShape(100.dp)).background(Color.White.copy(alpha = 0.08f)),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        Modifier.size(22.dp).clip(CircleShape).clickable { engine.nudgeWpm(-10) },
+                        contentAlignment = Alignment.Center
+                    ) { Text("−", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    Text(
+                        "${engineState.wpm}",
+                        fontFamily = PlexMono, fontWeight = FontWeight.SemiBold, fontSize = 10.sp,
+                        color = Lime, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.widthIn(min = 24.dp),
+                    )
+                    Box(
+                        Modifier.size(22.dp).clip(CircleShape).clickable { engine.nudgeWpm(10) },
+                        contentAlignment = Alignment.Center
+                    ) { Text("+", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
+                Spacer(Modifier.width(6.dp))
                 Box(
                     Modifier.size(22.dp).clip(RoundedCornerShape(6.dp))
                         .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(6.dp))

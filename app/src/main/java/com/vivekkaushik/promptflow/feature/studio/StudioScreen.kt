@@ -96,6 +96,8 @@ import kotlin.coroutines.resume
 import kotlin.math.sin
 import com.vivekkaushik.promptflow.ui.components.PFIcon
 import com.vivekkaushik.promptflow.R
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.foundation.layout.offset
 
 private val QUALITIES = listOf(
     Quality.UHD to "4K",
@@ -294,6 +296,8 @@ fun StudioScreen(onBack: () -> Unit) {
             }
         }
 
+        val panelHeightDp = (LocalConfiguration.current.screenHeightDp * 0.46f).dp
+
         // Zone B — prompter glass panel, under the punch-hole
         Box(
             Modifier
@@ -312,7 +316,11 @@ fun StudioScreen(onBack: () -> Unit) {
 
         // Zone C — side rail: mirror, flip camera, aspect
         Column(
-            Modifier.align(Alignment.CenterEnd).padding(end = 10.dp).graphicsLayer { translationY = 60f },
+            Modifier.align(Alignment.TopEnd)
+                .statusBarsPadding()
+                // clear of the prompter panel above (44dp offset + 46% height + 12dp gap)
+                .padding(top = 44.dp + 12.dp, end = 10.dp)
+                .offset(y = panelHeightDp + 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             RailButton(

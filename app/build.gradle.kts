@@ -26,7 +26,7 @@ android {
         targetSdk = 36
         // Fastlane passes -PversionCode (next code from Play Console)
         versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
-        versionName = "1.0"
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

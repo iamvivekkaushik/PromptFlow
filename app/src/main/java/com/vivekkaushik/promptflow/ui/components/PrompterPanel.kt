@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -53,9 +54,21 @@ fun rememberPrompterFontFamily(settings: PrompterSettings): FontFamily =
         if (settings.fontName == "IBM Plex Sans") return@remember PlexSans
         runCatching {
             FontFamily(
-                GFont(googleFont = GoogleFont(settings.fontName), fontProvider = fontProvider, weight = FontWeight.Normal),
-                GFont(googleFont = GoogleFont(settings.fontName), fontProvider = fontProvider, weight = FontWeight.SemiBold),
-                GFont(googleFont = GoogleFont(settings.fontName), fontProvider = fontProvider, weight = FontWeight.Bold),
+                GFont(
+                    googleFont = GoogleFont(settings.fontName),
+                    fontProvider = fontProvider,
+                    weight = FontWeight.Normal
+                ),
+                GFont(
+                    googleFont = GoogleFont(settings.fontName),
+                    fontProvider = fontProvider,
+                    weight = FontWeight.SemiBold
+                ),
+                GFont(
+                    googleFont = GoogleFont(settings.fontName),
+                    fontProvider = fontProvider,
+                    weight = FontWeight.Bold
+                ),
             )
         }.getOrDefault(PlexSans)
     }
@@ -76,14 +89,17 @@ fun prompterTextStyle(settings: PrompterSettings, fontScale: Float = 1f): TextSt
 /** Static mirrored block of prompter-styled text — used by the Settings live preview. */
 @Composable
 fun PrompterPreviewText(settings: PrompterSettings, text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        style = prompterTextStyle(settings),
-        modifier = modifier.graphicsLayer {
-            scaleX = if (settings.mirrorH) -1f else 1f
-            scaleY = if (settings.mirrorV) -1f else 1f
-        }
-    )
+    Column() {
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = text,
+            style = prompterTextStyle(settings),
+            modifier = modifier.graphicsLayer {
+                scaleX = if (settings.mirrorH) -1f else 1f
+                scaleY = if (settings.mirrorV) -1f else 1f
+            },
+        )
+    }
 }
 
 /**
@@ -154,8 +170,16 @@ fun PrompterViewport(
                 .padding(top = bandTop)
                 .padding(horizontal = 12.dp)
         ) {
-            Box(Modifier.fillMaxWidth().height(2.dp).background(Lime))
-            Box(Modifier.fillMaxWidth().height(guideBandHeightDp.dp).background(Lime.copy(alpha = 0.10f)))
+            Box(Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .background(Lime))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(guideBandHeightDp.dp)
+                    .background(Lime.copy(alpha = 0.10f))
+            )
         }
 
         // Scrims (over the band, under the caret)
@@ -190,7 +214,9 @@ fun PrompterViewport(
         }
 
         // Lens caret — marks the camera axis
-        Canvas(Modifier.align(Alignment.TopCenter).size(width = 16.dp, height = 8.dp)) {
+        Canvas(Modifier
+            .align(Alignment.TopCenter)
+            .size(width = 16.dp, height = 8.dp)) {
             val path = Path().apply {
                 moveTo(0f, 0f)
                 lineTo(size.width, 0f)

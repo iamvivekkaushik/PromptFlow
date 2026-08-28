@@ -157,6 +157,28 @@ fun AllScriptsScreen(
         }
 
         // Script rows
+        var pendingDelete by remember { mutableStateOf<Script?>(null) }
+        pendingDelete?.let { doomed ->
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { pendingDelete = null },
+                containerColor = SurfaceContainerHigh,
+                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                title = { Text("Delete \"${doomed.title}\"?") },
+                text = { Text("The script is removed from this device. Recordings in your gallery are not affected.") },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(onClick = {
+                        vm.delete(doomed.id)
+                        pendingDelete = null
+                    }) { Text("Delete", color = com.vivekkaushik.promptflow.ui.theme.Record) }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = { pendingDelete = null }) {
+                        Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+            )
+        }
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val tints = listOf(Lime, Warning, Sky)
             filtered.forEachIndexed { i, script ->
@@ -212,6 +234,14 @@ fun AllScriptsScreen(
                                     PFIcon(R.drawable.ic_play, 12.dp, OnLime)
                                     Text("Play", fontFamily = Sora, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = OnLime)
                                 }
+                            }
+                            Box(
+                                Modifier.size(26.dp).clip(CircleShape)
+                                    .border(1.dp, OutlineVariant, CircleShape)
+                                    .clickable { pendingDelete = script },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                PFIcon(R.drawable.ic_delete, 13.dp, MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }

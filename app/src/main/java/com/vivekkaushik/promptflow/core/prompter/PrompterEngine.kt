@@ -49,8 +49,12 @@ class PrompterEngine(scope: CoroutineScope) {
     var tokens: List<String> = tokenize(DEMO_SCRIPT)
         private set
 
-    // Voice-sync steering: velocity multiplier eased toward this, clamped ±40%
-    @Volatile private var voiceMultiplier = 1f
+    // Voice-sync steering: while active, the tick loop continuously chases the last
+    // matched word; when the speaker goes quiet the scroll eases to a crawl.
+    @Volatile private var voiceActive = false
+    @Volatile private var voiceTargetWord = -1
+    @Volatile private var lastVoiceMatchNs = 0L
+    private var voiceMultiplier = 1f
     private var currentSpeedPxSec = 0f
     private var countdownRemaining = 0f
 
@@ -74,6 +78,7 @@ class PrompterEngine(scope: CoroutineScope) {
                     }
                 } else if (s.playing && contentHeightPx > 0f) {
                     val pxPerWord = contentHeightPx / wordCount
+                    updateVoiceSteering(now, dt, pxPerWord)
                     val target = s.wpm / 60f * pxPerWord * SPEED_FACTOR * voiceMultiplier
                     // exponential ease, ~400ms time constant
                     currentSpeedPxSec += (target - currentSpeedPxSec) * min(1f, dt / 0.4f)
@@ -102,7 +107,7 @@ class PrompterEngine(scope: CoroutineScope) {
         pendingSeekFraction = if (sameScript && contentHeightPx > 0f) null else resume
         val offset = if (resume != null && sameScript && contentHeightPx > 0f) resume * contentHeightPx else 0f
         countdownRemaining = 0f
-        voiceMultiplier = 1f
+        resetVoiceSteering()
         _state.update {
             State(
                 scriptId = script.id,
@@ -131,7 +136,7 @@ class PrompterEngine(scope: CoroutineScope) {
     }
 
     fun pause() { countdownRemaining = 0f; _state.update { it.copy(playing = false, countdown = 0) } }
-    fun rewind() { voiceMultiplier = 1f; countdownRemaining = 0f; _state.update { it.copy(offsetPx = 0f, playing = false, countdown = 0) } }
+    fun rewind() { resetVoiceSteering(); countdownRemaining = 0f; _state.update { it.copy(offsetPx = 0f, playing = false, countdown = 0) } }
 
     fun setWpm(v: Int) = _state.update { it.copy(wpm = v.coerceIn(WPM_MIN, WPM_MAX)) }
     fun nudgeWpm(delta: Int) = setWpm(_state.value.wpm + delta)
@@ -147,18 +152,39 @@ class PrompterEngine(scope: CoroutineScope) {
     val currentWordIndex: Int
         get() = (progressFraction * wordCount).toInt().coerceIn(0, wordCount - 1)
 
-    /** Speech sync: steer the scroller toward this word. Clamped ±40% of set WPM. */
+    /** Speech sync: the scroller chases this word until the next match arrives. */
     fun targetWord(index: Int) {
-        if (contentHeightPx <= 0f) return
-        val desired = index.toFloat() / wordCount * contentHeightPx
-        val diffPx = desired - _state.value.offsetPx
-        // ~2 seconds to close the gap, then clamp
-        val pxPerWord = contentHeightPx / wordCount
-        val basePxSec = _state.value.wpm / 60f * pxPerWord
-        voiceMultiplier = (1f + diffPx / (basePxSec * 2f)).coerceIn(0.6f, 1.4f)
+        voiceTargetWord = index.coerceIn(0, wordCount)
+        lastVoiceMatchNs = System.nanoTime()
     }
 
-    fun resetVoiceSteering() { voiceMultiplier = 1f }
+    fun setVoiceActive(active: Boolean) {
+        voiceActive = active
+        if (!active) resetVoiceSteering()
+    }
+
+    fun resetVoiceSteering() { voiceMultiplier = 1f; voiceTargetWord = -1; lastVoiceMatchNs = 0L }
+
+    /**
+     * Proportional controller, re-evaluated every frame: aim to close the gap to the
+     * spoken word in ~1.2s, clamped to [VOICE_MIN, VOICE_MAX] of the set WPM. With no
+     * match for VOICE_IDLE_AFTER_NS (speaker paused), ease down to a crawl instead of
+     * running away from the reader.
+     */
+    private fun updateVoiceSteering(now: Long, dt: Float, pxPerWord: Float) {
+        if (!voiceActive || lastVoiceMatchNs == 0L || voiceTargetWord < 0) {
+            if (!voiceActive) voiceMultiplier = 1f
+            return
+        }
+        if (now - lastVoiceMatchNs > VOICE_IDLE_AFTER_NS) {
+            voiceMultiplier += (VOICE_IDLE - voiceMultiplier) * min(1f, dt / 0.6f)
+            return
+        }
+        val desired = voiceTargetWord * pxPerWord
+        val diffPx = desired - _state.value.offsetPx
+        val basePxSec = _state.value.wpm / 60f * pxPerWord * SPEED_FACTOR
+        voiceMultiplier = (1f + diffPx / (basePxSec * 1.2f)).coerceIn(VOICE_MIN, VOICE_MAX)
+    }
 
     companion object {
         const val WPM_MIN = 60
@@ -167,6 +193,12 @@ class PrompterEngine(scope: CoroutineScope) {
         /** Scroll-speed calibration: velocity is 1× the literal words-per-minute pace. */
         const val SPEED_FACTOR = 1f
         private const val FRAME_MS = 16L
+
+        // Voice steering bounds: fast enough to visibly catch up, slow crawl when quiet
+        private const val VOICE_MIN = 0.2f
+        private const val VOICE_MAX = 1.8f
+        private const val VOICE_IDLE = 0.25f
+        private const val VOICE_IDLE_AFTER_NS = 2_200_000_000L
 
         fun tokenize(text: String): List<String> =
             text.split(Regex("\\s+")).filter { it.isNotBlank() }

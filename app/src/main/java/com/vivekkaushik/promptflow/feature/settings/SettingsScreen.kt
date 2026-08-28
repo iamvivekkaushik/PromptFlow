@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vivekkaushik.promptflow.Graph
@@ -69,10 +70,16 @@ private val SWATCHES = listOf(0xFFE4E3DB, 0xFFC7E86C, 0xFFFFB94E, 0xFF7FD4FF)
 
 /** Prompter settings: typography, color, mirror & smart scroll, hardware remotes (spec screen 4). */
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onOpenLicenses: () -> Unit = {}) {
-    val settings by Graph.settings.settings.collectAsState(initial = PrompterSettings())
+@Preview(name = "Settings Screen", apiLevel = 36)
+fun SettingsScreen(onBack: () -> Unit = {}, onOpenLicenses: () -> Unit = {}) {
+    val isPreview = androidx.compose.ui.platform.LocalInspectionMode.current
+    val settings by if (isPreview) {
+        remember { mutableStateOf(PrompterSettings()) }
+    } else {
+        Graph.settings.settings.collectAsState(initial = PrompterSettings())
+    }
     val scope = rememberCoroutineScope()
-    val store = Graph.settings
+    val store = if (isPreview) null else Graph.settings
 
     val appCtx = androidx.compose.ui.platform.LocalContext.current.applicationContext
     val fontLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -84,7 +91,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenLicenses: () -> Unit = {}) {
             ctx.contentResolver.openInputStream(uri)?.use { input ->
                 dest.outputStream().use { input.copyTo(it) }
             }
-            store.setCustomFontPath(dest.absolutePath)
+            store?.setCustomFontPath(dest.absolutePath)
         }
     }
 
@@ -105,7 +112,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenLicenses: () -> Unit = {}) {
 
         // Live preview
         Box(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(SurfaceContainer).height(170.dp).padding(16.dp)
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(SurfaceContainer).height(170.dp).padding(8.dp)
         ) {
             PrompterPreviewText(settings, "The quick brown fox jumps over the lazy dog while reading at pace.")
             Text("LIVE PREVIEW", fontFamily = PlexMono, fontSize = 10.sp, color = Outline, modifier = Modifier.align(Alignment.TopEnd))
@@ -114,11 +121,11 @@ fun SettingsScreen(onBack: () -> Unit, onOpenLicenses: () -> Unit = {}) {
 
         // TYPOGRAPHY
         SettingsCard("TYPOGRAPHY") {
-            SliderRow("Size", settings.fontSizeSp.toFloat(), 18f..64f, "${settings.fontSizeSp}sp") {
-                scope.launch { store.setFontSize(it.toInt()) }
+            SliderRow("Size", settings.fontSizeSp.toFloat(), 18f..100f, "${settings.fontSizeSp}sp") {
+                scope.launch { store?.setFontSize(it.toInt()) }
             }
             SliderRow("Line spacing", settings.lineHeightMult, 1.2f..2.2f, "${"%.1f".format(settings.lineHeightMult)}×") {
-                scope.launch { store.setLineHeight((it * 10).toInt() / 10f) }
+                scope.launch { store?.setLineHeight((it * 10).toInt() / 10f) }
             }
             // Weight segmented control
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -131,7 +138,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenLicenses: () -> Unit = {}) {
                         Box(
                             Modifier.weight(1f)
                                 .background(if (selected) LimeContainer else Color.Transparent)
-                                .clickable { scope.launch { store.setWeight(w) } }
+                                .clickable { scope.launch { store?.setWeight(w) } }
                                 .padding(vertical = 9.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -163,7 +170,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenLicenses: () -> Unit = {}) {
                         GOOGLE_FONTS.forEach { name ->
                             DropdownMenuItem(
                                 text = { Text(name) },
-                                onClick = { expanded = false; scope.launch { store.setFontName(name) } }
+                                onClick = { expanded = false; scope.launch { store?.setFontName(name) } }
                             )
                         }
                     }
@@ -189,7 +196,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenLicenses: () -> Unit = {}) {
                             Modifier.size(34.dp).clip(CircleShape)
                                 .border(2.dp, if (settings.textColor == c) Lime else Color.Transparent, CircleShape)
                                 .padding(3.dp).clip(CircleShape).background(Color(c))
-                                .clickable { scope.launch { store.setTextColor(c) } }
+                                .clickable { scope.launch { store?.setTextColor(c) } }
                         )
                     }
                 }
@@ -198,10 +205,10 @@ fun SettingsScreen(onBack: () -> Unit, onOpenLicenses: () -> Unit = {}) {
 
         // MIRROR & SMART SCROLL
         SettingsCard("MIRROR & SMART SCROLL") {
-            ToggleRow("Voice-activated scroll", "Match speed to your speaking pace", settings.voiceSync) { scope.launch { store.setVoiceSync(it) } }
-            ToggleRow("Mirror horizontal", "For beam-splitter glass rigs", settings.mirrorH) { scope.launch { store.setMirrorH(it) } }
-            ToggleRow("Mirror vertical", "For overhead rig mounts", settings.mirrorV) { scope.launch { store.setMirrorV(it) } }
-            ToggleRow("Double-tap to pause", "Anywhere on the prompter text", settings.tapPause) { scope.launch { store.setTapPause(it) } }
+            ToggleRow("Voice-activated scroll", "Match speed to your speaking pace", settings.voiceSync) { scope.launch { store?.setVoiceSync(it) } }
+            ToggleRow("Mirror horizontal", "For beam-splitter glass rigs", settings.mirrorH) { scope.launch { store?.setMirrorH(it) } }
+            ToggleRow("Mirror vertical", "For overhead rig mounts", settings.mirrorV) { scope.launch { store?.setMirrorV(it) } }
+            ToggleRow("Double-tap to pause", "Anywhere on the prompter text", settings.tapPause) { scope.launch { store?.setTapPause(it) } }
             // Start delay: countdown shown in the prompter before scrolling begins
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.width(88.dp)) {
@@ -216,7 +223,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenLicenses: () -> Unit = {}) {
                         Box(
                             Modifier.weight(1f)
                                 .background(if (selected) LimeContainer else Color.Transparent)
-                                .clickable { scope.launch { store.setStartDelay(sec) } }
+                                .clickable { scope.launch { store?.setStartDelay(sec) } }
                                 .padding(vertical = 9.dp),
                             contentAlignment = Alignment.Center
                         ) {

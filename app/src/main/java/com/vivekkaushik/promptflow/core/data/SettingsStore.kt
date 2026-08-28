@@ -19,7 +19,7 @@ data class PrompterSettings(
     val customFontPath: String = "",   // user .ttf/.otf overrides fontName when set
     val mirrorH: Boolean = false,
     val mirrorV: Boolean = false,
-    val voiceSync: Boolean = true,
+    val voiceSync: Boolean = false,
     val tapPause: Boolean = true,
     val wpm: Int = 140,
     val overlayOpacity: Int = 62,      // 15–95%

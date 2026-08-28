@@ -47,6 +47,7 @@ class OverlayService : LifecycleService(), ViewModelStoreOwner, SavedStateRegist
     private var overlayView: ComposeView? = null
     private lateinit var params: WindowManager.LayoutParams
     private var mediaSession: MediaSessionCompat? = null
+    private var volumeProvider: VolumeProviderCompat? = null
 
     private val density: Float get() = resources.displayMetrics.density
 
@@ -142,11 +143,22 @@ class OverlayService : LifecycleService(), ViewModelStoreOwner, SavedStateRegist
             override fun onPlay() { Graph.engine.togglePlay() }
             override fun onPause() { Graph.engine.togglePlay() }
         })
-        session.setPlaybackToRemote(object : VolumeProviderCompat(VOLUME_CONTROL_RELATIVE, 100, 50) {
+        // Relative volume provider: every key press is a WPM trim. currentVolume is pinned
+        // to the midpoint so the system never drives us back toward an "absolute" value.
+        volumeProvider = object : VolumeProviderCompat(VOLUME_CONTROL_RELATIVE, VOLUME_STEPS, VOLUME_STEPS / 2) {
+            // Never write currentVolume here: the session broadcasts the change back and the
+            // system re-issues adjustments, which snowballs one key press into dozens of trims.
             override fun onAdjustVolume(direction: Int) {
-                if (direction != 0) Graph.engine.nudgeWpm(direction * 10)
+                if (direction == 0) return
+                Graph.engine.nudgeWpm(direction * WPM_STEP)
+                Graph.persistWpm(Graph.engine.state.value.wpm)
             }
-        })
+
+            override fun onSetVolumeTo(volume: Int) {
+                // Some OEMs send an absolute set on key-up — ignore it so WPM stays put.
+            }
+        }
+        session.setPlaybackToRemote(volumeProvider)
         session.isActive = true
         mediaSession = session
     }
@@ -185,6 +197,8 @@ class OverlayService : LifecycleService(), ViewModelStoreOwner, SavedStateRegist
     }
 
     companion object {
+        private const val VOLUME_STEPS = 100
+        private const val WPM_STEP = 10
         private const val CHANNEL_ID = "overlay"
         private const val NOTIFICATION_ID = 41
         const val ACTION_STOP = "com.vivekkaushik.promptflow.STOP_OVERLAY"
