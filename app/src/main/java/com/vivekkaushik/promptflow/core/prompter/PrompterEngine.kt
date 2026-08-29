@@ -49,6 +49,53 @@ class PrompterEngine(scope: CoroutineScope) {
     var tokens: List<String> = tokenize(DEMO_SCRIPT)
         private set
 
+    /** Parsed markup for the loaded script: sections + pause points (spec: Phase 3). */
+    var markup: ScriptMarkup.Parsed = ScriptMarkup.parse(DEMO_SCRIPT)
+        private set
+
+    /**
+     * Top-of-line pixel for each spoken word, reported by the rendering surface from its
+     * real TextLayout. Null until first layout — mapping falls back to the linear estimate.
+     */
+    @Volatile var wordTopsPx: FloatArray? = null
+        set(value) {
+            field = value
+            // Positions only become real here; re-aim the pause pointer against them.
+            if (value != null) resyncPauses(_state.value.offsetPx)
+        }
+
+    // Index into markup.pauses of the next pause ahead of the read position
+    @Volatile private var pausePtr = 0
+
+    fun pixelForWord(index: Int): Float {
+        val tops = wordTopsPx
+        if (tops != null && tops.isNotEmpty()) return tops[index.coerceIn(0, tops.size - 1)]
+        return index.toFloat() / wordCount * contentHeightPx
+    }
+
+    private fun wordAtPixel(y: Float): Int {
+        val tops = wordTopsPx
+        if (tops == null || tops.isEmpty())
+            return if (contentHeightPx > 0f) ((y / contentHeightPx) * wordCount).toInt().coerceIn(0, wordCount - 1) else 0
+        var lo = 0; var hi = tops.size - 1
+        while (lo < hi) {
+            val mid = (lo + hi + 1) / 2
+            if (tops[mid] <= y) lo = mid else hi = mid - 1
+        }
+        return lo
+    }
+
+    /** Re-aim the pause pointer at the first pause past the given scroll offset. */
+    private fun resyncPauses(offsetPx: Float) {
+        val pauses = markup.pauses
+        // Before the first layout every word maps to pixel 0, which would skip every
+        // pause. Keep the pointer at the top until real positions arrive.
+        if (contentHeightPx <= 0f || wordTopsPx == null) { pausePtr = 0; return }
+        var i = 0
+        while (i < pauses.size && pixelForWord(pauses[i].wordIndex) <= offsetPx) i++
+        pausePtr = i
+    }
+
     // Voice-sync steering: while active, the tick loop continuously chases the last
     // matched word; when the speaker goes quiet the scroll eases to a crawl.
     @Volatile private var voiceActive = false
@@ -83,7 +130,18 @@ class PrompterEngine(scope: CoroutineScope) {
                     // exponential ease, ~400ms time constant
                     currentSpeedPxSec += (target - currentSpeedPxSec) * min(1f, dt / 0.4f)
                     val next = s.offsetPx + currentSpeedPxSec * dt
-                    if (next >= contentHeightPx) {
+                    // Pause markers: stop the moment the guide band reaches one
+                    val pause = markup.pauses.getOrNull(pausePtr)
+                    val pausePx = pause?.let { pixelForWord(it.wordIndex) }
+                    if (pause != null && pausePx != null && pausePx in s.offsetPx..next) {
+                        pausePtr++
+                        if (pause.holdSec > 0) {
+                            countdownRemaining = pause.holdSec.toFloat()
+                            _state.update { it.copy(offsetPx = pausePx, playing = false, countdown = pause.holdSec) }
+                        } else {
+                            _state.update { it.copy(offsetPx = pausePx, playing = false) }
+                        }
+                    } else if (next >= contentHeightPx) {
                         _state.update { it.copy(offsetPx = contentHeightPx, playing = false) }
                     } else {
                         _state.update { it.copy(offsetPx = next) }
@@ -98,8 +156,10 @@ class PrompterEngine(scope: CoroutineScope) {
     fun load(script: Script, resumeFraction: Float = 0f) {
         val sameScript = _state.value.scriptId == script.id && script.body == _state.value.text
         if (!sameScript) {
-            tokens = tokenize(script.body)
+            markup = ScriptMarkup.parse(script.body)
+            tokens = markup.words
             contentHeightPx = 0f
+            wordTopsPx = null
         }
         // A load always restarts from the top of the script unless the caller
         // explicitly passes a resume position (the library's Continue card).
@@ -108,6 +168,8 @@ class PrompterEngine(scope: CoroutineScope) {
         val offset = if (resume != null && sameScript && contentHeightPx > 0f) resume * contentHeightPx else 0f
         countdownRemaining = 0f
         resetVoiceSteering()
+        pausePtr = 0
+        resyncPauses(offset)
         _state.update {
             State(
                 scriptId = script.id,
@@ -136,13 +198,41 @@ class PrompterEngine(scope: CoroutineScope) {
     }
 
     fun pause() { countdownRemaining = 0f; _state.update { it.copy(playing = false, countdown = 0) } }
-    fun rewind() { resetVoiceSteering(); countdownRemaining = 0f; _state.update { it.copy(offsetPx = 0f, playing = false, countdown = 0) } }
+    fun rewind() {
+        resetVoiceSteering(); countdownRemaining = 0f; pausePtr = 0
+        _state.update { it.copy(offsetPx = 0f, playing = false, countdown = 0) }
+    }
+
+    /**
+     * Jump to the previous/next `##` section start. Backwards falls back to the top of the
+     * script when there is no earlier section. Playback state is preserved.
+     */
+    fun jumpSection(direction: Int) {
+        val starts = markup.sectionStarts
+        val target: Float = if (direction < 0) {
+            // small slack so repeated taps step back through sections, not to the same one
+            val prev = starts.lastOrNull { pixelForWord(it) < _state.value.offsetPx - 8f }
+            if (prev != null) pixelForWord(prev) else 0f
+        } else {
+            val next = starts.firstOrNull { pixelForWord(it) > _state.value.offsetPx + 8f }
+                ?: return
+            pixelForWord(next)
+        }
+        resetVoiceSteering()
+        countdownRemaining = 0f
+        _state.update { it.copy(offsetPx = target.coerceIn(0f, contentHeightPx), countdown = 0) }
+        resyncPauses(target)
+    }
 
     fun setWpm(v: Int) = _state.update { it.copy(wpm = v.coerceIn(WPM_MIN, WPM_MAX)) }
     fun nudgeWpm(delta: Int) = setWpm(_state.value.wpm + delta)
 
     fun seekFraction(fraction: Float) {
-        if (contentHeightPx > 0f) _state.update { it.copy(offsetPx = fraction.coerceIn(0f, 1f) * contentHeightPx) }
+        if (contentHeightPx > 0f) {
+            val off = fraction.coerceIn(0f, 1f) * contentHeightPx
+            _state.update { it.copy(offsetPx = off) }
+            resyncPauses(off)
+        }
     }
 
     val progressFraction: Float
@@ -150,7 +240,7 @@ class PrompterEngine(scope: CoroutineScope) {
 
     /** Word index currently at the guide band. */
     val currentWordIndex: Int
-        get() = (progressFraction * wordCount).toInt().coerceIn(0, wordCount - 1)
+        get() = wordAtPixel(_state.value.offsetPx)
 
     /** Speech sync: the scroller chases this word until the next match arrives. */
     fun targetWord(index: Int) {
@@ -180,7 +270,7 @@ class PrompterEngine(scope: CoroutineScope) {
             voiceMultiplier += (VOICE_IDLE - voiceMultiplier) * min(1f, dt / 0.6f)
             return
         }
-        val desired = voiceTargetWord * pxPerWord
+        val desired = pixelForWord(voiceTargetWord)
         val diffPx = desired - _state.value.offsetPx
         val basePxSec = _state.value.wpm / 60f * pxPerWord * SPEED_FACTOR
         voiceMultiplier = (1f + diffPx / (basePxSec * 1.2f)).coerceIn(VOICE_MIN, VOICE_MAX)

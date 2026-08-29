@@ -71,7 +71,7 @@ private val SWATCHES = listOf(0xFFE4E3DB, 0xFFC7E86C, 0xFFFFB94E, 0xFF7FD4FF)
 /** Prompter settings: typography, color, mirror & smart scroll, hardware remotes (spec screen 4). */
 @Composable
 @Preview(name = "Settings Screen", apiLevel = 36)
-fun SettingsScreen(onBack: () -> Unit = {}, onOpenLicenses: () -> Unit = {}) {
+fun SettingsScreen(onBack: () -> Unit = {}, onOpenLicenses: () -> Unit = {}, onOpenHelp: () -> Unit = {}) {
     val isPreview = androidx.compose.ui.platform.LocalInspectionMode.current
     val settings by if (isPreview) {
         remember { mutableStateOf(PrompterSettings()) }
@@ -236,6 +236,32 @@ fun SettingsScreen(onBack: () -> Unit = {}, onOpenLicenses: () -> Unit = {}) {
                     }
                 }
             }
+        }
+
+        // HELP
+        SettingsCard("HELP") {
+            Row(
+                Modifier.fillMaxWidth().clickable(onClick = onOpenHelp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Script markers & shortcuts", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "Pauses, sections, gestures and remote keys",
+                        style = MaterialTheme.typography.bodySmall, color = Outline
+                    )
+                }
+                PFIcon(R.drawable.ic_chevron, 14.dp, Outline)
+            }
+        }
+
+        // RECORDING — affects the saved video, not the prompter text
+        SettingsCard("RECORDING") {
+            ToggleRow(
+                "Mirror front camera video",
+                "Save selfie takes the way the viewfinder shows them",
+                settings.mirrorFrontVideo,
+            ) { scope.launch { store?.setMirrorFrontVideo(it) } }
         }
 
         // ABOUT

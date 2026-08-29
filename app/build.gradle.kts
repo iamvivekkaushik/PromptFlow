@@ -26,7 +26,7 @@ android {
         targetSdk = 36
         // Fastlane passes -PversionCode (next code from Play Console)
         versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
-        versionName = "1.1"
+        versionName = "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -64,6 +64,13 @@ android {
 }
 
 dependencies {
+    // CameraX 1.6.2 drags in appcompat 1.1.0 -> fragment 1.1.0, which the Play Console flags
+    // as an outdated SDK. Constrain both up without depending on them directly.
+    constraints {
+        implementation(libs.androidx.appcompat)
+        implementation(libs.androidx.fragment)
+    }
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)

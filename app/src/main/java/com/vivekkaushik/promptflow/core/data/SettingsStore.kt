@@ -24,6 +24,8 @@ data class PrompterSettings(
     val wpm: Int = 140,
     val overlayOpacity: Int = 62,      // 15–95%
     val startDelaySec: Int = 0,        // countdown before the prompter starts scrolling
+    // Front camera: save takes the way the viewfinder shows them (mirrored), not flipped
+    val mirrorFrontVideo: Boolean = true,
 )
 
 private val Context.dataStore by preferencesDataStore(name = "prompter_settings")
@@ -43,6 +45,7 @@ class SettingsStore(private val context: Context) {
         val wpm = intPreferencesKey("wpm")
         val opacity = intPreferencesKey("overlay_opacity")
         val startDelay = intPreferencesKey("start_delay")
+        val mirrorFrontVideo = booleanPreferencesKey("mirror_front_video")
     }
 
     val settings: Flow<PrompterSettings> = context.dataStore.data.map { p ->
@@ -58,6 +61,7 @@ class SettingsStore(private val context: Context) {
             mirrorV = p[K.mirrorV] ?: d.mirrorV,
             voiceSync = p[K.voiceSync] ?: d.voiceSync,
             tapPause = p[K.tapPause] ?: d.tapPause,
+            mirrorFrontVideo = p[K.mirrorFrontVideo] ?: d.mirrorFrontVideo,
             wpm = p[K.wpm] ?: d.wpm,
             overlayOpacity = p[K.opacity] ?: d.overlayOpacity,
             startDelaySec = p[K.startDelay] ?: d.startDelaySec,
@@ -77,4 +81,5 @@ class SettingsStore(private val context: Context) {
     suspend fun setWpm(v: Int) = context.dataStore.edit { it[K.wpm] = v }
     suspend fun setOverlayOpacity(v: Int) = context.dataStore.edit { it[K.opacity] = v }
     suspend fun setStartDelay(v: Int) = context.dataStore.edit { it[K.startDelay] = v }
+    suspend fun setMirrorFrontVideo(v: Boolean) = context.dataStore.edit { it[K.mirrorFrontVideo] = v }
 }

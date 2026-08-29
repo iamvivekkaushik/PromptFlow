@@ -14,5 +14,6 @@ data class Script(
     val createdAt: Long,
     val updatedAt: Long,
 ) {
-    val wordCount: Int get() = body.split(Regex("\\s+")).count { it.isNotBlank() }
+    /** Spoken words only — headers and [[markers]] never count toward duration (spec: Phase 3). */
+    val wordCount: Int get() = com.vivekkaushik.promptflow.core.prompter.ScriptMarkup.parse(body).words.size
 }

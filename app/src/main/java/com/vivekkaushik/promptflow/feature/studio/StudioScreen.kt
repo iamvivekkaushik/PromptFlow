@@ -98,6 +98,16 @@ import com.vivekkaushik.promptflow.ui.components.PFIcon
 import com.vivekkaushik.promptflow.R
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.layout.absoluteOffset
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.camera.core.FocusMeteringAction
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.camera.core.MirrorMode
 
 private val QUALITIES = listOf(
     Quality.UHD to "4K",
@@ -123,6 +133,7 @@ private suspend fun awaitCameraProvider(context: Context): ProcessCameraProvider
  * so the crop applies to both viewfinder and recording) are all switchable from the
  * status chips / side rail. Prompter is UI-only — never in the footage.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StudioScreen(onBack: () -> Unit) {
     val context = LocalContext.current
@@ -146,6 +157,14 @@ fun StudioScreen(onBack: () -> Unit) {
     }
 
     var lensFacing by remember { mutableStateOf(CameraSelector.DEFAULT_FRONT_CAMERA) }
+    var camera by remember { mutableStateOf<androidx.camera.core.Camera?>(null) }
+    var zoomRatio by remember { mutableFloatStateOf(1f) }
+    var torchOn by remember { mutableStateOf(false) }
+    var gridOn by remember { mutableStateOf(false) }
+    // Tap-to-focus reticle position (screen px) + a key so repeat taps retrigger the fade
+    var focusAt by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
+    var focusKey by remember { mutableIntStateOf(0) }
+    var evFraction by remember { mutableFloatStateOf(0.5f) }
     var qualityIdx by remember { mutableIntStateOf(0) }
     var fps by remember { mutableIntStateOf(30) }
     var aspectIdx by remember { mutableIntStateOf(0) }
@@ -156,7 +175,7 @@ fun StudioScreen(onBack: () -> Unit) {
     var audioAmplitude by remember { mutableFloatStateOf(0f) }
     val isRecording = recording != null
 
-    val videoCapture = remember(qualityIdx, fps) {
+    val videoCapture = remember(qualityIdx, fps, settings.mirrorFrontVideo) {
         val recorder = Recorder.Builder()
             .setQualitySelector(
                 QualitySelector.from(
@@ -167,6 +186,12 @@ fun StudioScreen(onBack: () -> Unit) {
             .build()
         VideoCapture.Builder(recorder)
             .setTargetFrameRate(Range(fps, fps))
+            // CameraX records the front camera un-mirrored by default, so a selfie take comes
+            // out flipped compared to the viewfinder. ON_FRONT_ONLY saves what the user saw.
+            .setMirrorMode(
+                if (settings.mirrorFrontVideo) MirrorMode.MIRROR_MODE_ON_FRONT_ONLY
+                else MirrorMode.MIRROR_MODE_OFF
+            )
             .build()
     }
 
@@ -185,10 +210,31 @@ fun StudioScreen(onBack: () -> Unit) {
             .build()
         try {
             provider.unbindAll()
-            provider.bindToLifecycle(lifecycleOwner, lensFacing, group)
+            val cam = provider.bindToLifecycle(lifecycleOwner, lensFacing, group)
+            camera = cam
+            // Re-apply session zoom after rebinds (quality/aspect switches); clamp to the new lens
+            val zs = cam.cameraInfo.zoomState.value
+            if (zs != null) {
+                zoomRatio = zoomRatio.coerceIn(zs.minZoomRatio, zs.maxZoomRatio)
+                cam.cameraControl.setZoomRatio(zoomRatio)
+            }
+            if (cam.cameraInfo.hasFlashUnit()) cam.cameraControl.enableTorch(torchOn) else torchOn = false
+            val ev = cam.cameraInfo.exposureState
+            evFraction = if (ev.isExposureCompensationSupported) {
+                val r = ev.exposureCompensationRange
+                (ev.exposureCompensationIndex - r.lower).toFloat() / (r.upper - r.lower).coerceAtLeast(1)
+            } else 0.5f
             cameraBound = true
         } catch (e: Exception) {
             Toast.makeText(context, "Camera setup failed: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // Focus reticle auto-fade
+    LaunchedEffect(focusKey) {
+        if (focusAt != null) {
+            kotlinx.coroutines.delay(2600)
+            focusAt = null
         }
     }
 
@@ -234,6 +280,8 @@ fun StudioScreen(onBack: () -> Unit) {
     fun flipCamera() {
         recording?.stop()
         recording = null
+        zoomRatio = 1f
+        torchOn = false
         lensFacing = if (lensFacing == CameraSelector.DEFAULT_FRONT_CAMERA) CameraSelector.DEFAULT_BACK_CAMERA else CameraSelector.DEFAULT_FRONT_CAMERA
     }
 
@@ -248,6 +296,68 @@ fun StudioScreen(onBack: () -> Unit) {
                 },
                 modifier = Modifier.fillMaxSize(),
             )
+
+            // Camera gestures: tap to focus, pinch to zoom. Sits under the prompter panel
+            // and controls, so touches there never reach it.
+            Box(
+                Modifier.fillMaxSize()
+                    .pointerInput(cameraBound) {
+                        detectTapGestures { pos ->
+                            val cam = camera ?: return@detectTapGestures
+                            val pv = previewView ?: return@detectTapGestures
+                            val point = pv.meteringPointFactory.createPoint(pos.x, pos.y)
+                            cam.cameraControl.startFocusAndMetering(
+                                FocusMeteringAction.Builder(point)
+                                    .setAutoCancelDuration(3, java.util.concurrent.TimeUnit.SECONDS)
+                                    .build()
+                            )
+                            focusAt = pos
+                            focusKey++
+                        }
+                    }
+                    .pointerInput(cameraBound) {
+                        detectTransformGestures { _, _, zoom, _ ->
+                            val cam = camera ?: return@detectTransformGestures
+                            if (zoom == 1f) return@detectTransformGestures
+                            val zs = cam.cameraInfo.zoomState.value ?: return@detectTransformGestures
+                            zoomRatio = (zoomRatio * zoom).coerceIn(zs.minZoomRatio, zs.maxZoomRatio)
+                            cam.cameraControl.setZoomRatio(zoomRatio)
+                        }
+                    }
+            )
+
+            // Rule-of-thirds grid
+            if (gridOn) {
+                androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                    val c = Color.White.copy(alpha = 0.25f)
+                    val w = size.width; val h = size.height
+                    for (i in 1..2) {
+                        drawLine(c, Offset(w * i / 3f, 0f), Offset(w * i / 3f, h), 1.dp.toPx())
+                        drawLine(c, Offset(0f, h * i / 3f), Offset(w, h * i / 3f), 1.dp.toPx())
+                    }
+                }
+            }
+
+            // Focus reticle + exposure slider
+            focusAt?.let { pos ->
+                FocusReticle(
+                    at = pos,
+                    evFraction = evFraction,
+                    evSupported = camera?.cameraInfo?.exposureState?.isExposureCompensationSupported == true,
+                    onEv = { f ->
+                        evFraction = f
+                        camera?.let { cam ->
+                            val ev = cam.cameraInfo.exposureState
+                            if (ev.isExposureCompensationSupported) {
+                                val r = ev.exposureCompensationRange
+                                val idx = (r.lower + f * (r.upper - r.lower)).toInt().coerceIn(r.lower, r.upper)
+                                cam.cameraControl.setExposureCompensationIndex(idx)
+                            }
+                        }
+                        focusKey++ // keep the reticle alive while adjusting
+                    },
+                )
+            }
         } else {
             Column(
                 Modifier.align(Alignment.Center).padding(32.dp),
@@ -293,6 +403,15 @@ fun StudioScreen(onBack: () -> Unit) {
             }
             StatusChip(onClick = ::toggleFps) {
                 Text("${fps}fps ▾", fontFamily = PlexMono, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (camera?.cameraInfo?.hasFlashUnit() == true) {
+                StatusChip(onClick = {
+                    torchOn = !torchOn
+                    camera?.cameraControl?.enableTorch(torchOn)
+                }) { PFIcon(R.drawable.ic_flash, 14.dp, if (torchOn) Lime else MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
+            StatusChip(onClick = { gridOn = !gridOn }) {
+                PFIcon(R.drawable.ic_grid, 14.dp, if (gridOn) Lime else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
@@ -341,6 +460,33 @@ fun StudioScreen(onBack: () -> Unit) {
                 .navigationBarsPadding()
                 .padding(start = 18.dp, end = 18.dp, top = 24.dp, bottom = 18.dp)
         ) {
+            val zoomMax = camera?.cameraInfo?.zoomState?.value?.maxZoomRatio ?: 1f
+            if (zoomMax > 1.01f) {
+                Box(
+                    Modifier.align(Alignment.CenterHorizontally)
+                        .padding(bottom = 10.dp)
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(Color(0xFF0C0E0A).copy(alpha = 0.7f))
+                        .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(100.dp))
+                        .clickable {
+                            // cycle presets, clamped to what the lens supports
+                            val zs = camera?.cameraInfo?.zoomState?.value
+                            if (zs != null) {
+                                val presets = listOf(1f, 2f, 4f).filter { it <= zs.maxZoomRatio + 0.01f }
+                                val next = presets.firstOrNull { it > zoomRatio + 0.05f } ?: presets.first()
+                                zoomRatio = next.coerceIn(zs.minZoomRatio, zs.maxZoomRatio)
+                                camera?.cameraControl?.setZoomRatio(zoomRatio)
+                            }
+                        }
+                        .padding(horizontal = 12.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        "%.1f×".format(zoomRatio),
+                        fontFamily = PlexMono, fontWeight = FontWeight.SemiBold, fontSize = 11.sp,
+                        color = if (zoomRatio > 1.01f) Lime else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.height(22.dp)) {
                 AudioMeter(amplitude = audioAmplitude, animate = isRecording || engineState.playing)
                 Spacer(Modifier.width(8.dp))
@@ -386,7 +532,10 @@ fun StudioScreen(onBack: () -> Unit) {
             ) {
                 Box(
                     Modifier.size(48.dp).clip(CircleShape).background(SurfaceContainerHigh)
-                        .clickable { engine.rewind() },
+                        .combinedClickable(
+                            onClick = { engine.jumpSection(-1) },   // previous section (top if none)
+                            onLongClick = { engine.rewind() },
+                        ),
                     contentAlignment = Alignment.Center
                 ) { PFIcon(R.drawable.ic_rewind, 21.dp, MaterialTheme.colorScheme.onSurface) }
 
@@ -418,6 +567,7 @@ fun StudioScreen(onBack: () -> Unit) {
                                             }.getOrDefault(0f)
                                         }
                                         is VideoRecordEvent.Finalize -> {
+                                            val takeDurationMs = recDurationMs
                                             recDurationMs = 0L
                                             audioAmplitude = 0f
                                             recording = null
@@ -425,6 +575,12 @@ fun StudioScreen(onBack: () -> Unit) {
                                                 Toast.makeText(context, "Recording failed (error ${event.error})", Toast.LENGTH_LONG).show()
                                             } else {
                                                 Graph.markCurrentScriptRecorded()
+                                                Graph.saveTake(
+                                                    uri = event.outputResults.outputUri.toString(),
+                                                    durationMs = takeDurationMs,
+                                                    quality = QUALITIES[qualityIdx].second,
+                                                    fps = fps,
+                                                )
                                                 Toast.makeText(context, "Saved to Movies/PromptFlow", Toast.LENGTH_SHORT).show()
                                             }
                                         }
@@ -560,6 +716,62 @@ private fun AudioMeter(amplitude: Float, animate: Boolean) {
                 Modifier.width(4.dp).height((22 * level).dp)
                     .clip(RoundedCornerShape(2.dp)).background(Lime.copy(alpha = 0.85f))
             )
+        }
+    }
+}
+
+
+/** Tap-to-focus reticle with a vertical exposure slider beside it (stock-camera idiom). */
+@Composable
+private fun FocusReticle(
+    at: androidx.compose.ui.geometry.Offset,
+    evFraction: Float,
+    evSupported: Boolean,
+    onEv: (Float) -> Unit,
+) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val ringDp = 64.dp
+    val sliderH = 120.dp
+    with(density) {
+        Row(
+            Modifier.absoluteOffset(
+                x = (at.x - ringDp.toPx() / 2).toDp(),
+                y = (at.y - ringDp.toPx() / 2).toDp(),
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier.size(ringDp)
+                    .border(1.5.dp, Lime, CircleShape)
+            ) {
+                Box(Modifier.align(Alignment.Center).size(6.dp).clip(CircleShape).background(Lime))
+            }
+            if (evSupported) {
+                Spacer(Modifier.width(10.dp))
+                // vertical EV track: drag up = brighter
+                Box(
+                    Modifier.size(26.dp, sliderH)
+                        .pointerInput(Unit) {
+                            detectDragGestures { change, drag ->
+                                change.consume()
+                                onEv((evFraction - drag.y / sliderH.toPx()).coerceIn(0f, 1f))
+                            }
+                        }
+                ) {
+                    Box(
+                        Modifier.align(Alignment.Center).size(2.dp, sliderH)
+                            .clip(RoundedCornerShape(1.dp)).background(Color.White.copy(alpha = 0.4f))
+                    )
+                    Box(
+                        Modifier.align(Alignment.TopCenter)
+                            .offset(y = ((1f - evFraction) * (sliderH.toPx() - 18.dp.toPx())).toDp())
+                            .size(18.dp).clip(CircleShape).background(Lime),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(Modifier.size(7.dp).clip(CircleShape).background(Color(0xFF2A3400)))
+                    }
+                }
+            }
         }
     }
 }

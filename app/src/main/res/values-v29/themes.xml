@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- API 29+: opt out of the system's automatic bar scrims so the app draws truly edge-to-edge -->
+    <style name="Theme.PromptFlow" parent="Base.Theme.PromptFlow">
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+    </style>
+</resources>

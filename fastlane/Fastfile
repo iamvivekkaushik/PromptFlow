@@ -51,7 +51,9 @@ platform :android do
     upload_to_play_store(
       track: options[:track],
       aab: "app/build/outputs/bundle/release/app-release.aab",
-      release_status: options[:track] == "production" ? "completed" : "draft"
+      # Test tracks roll out immediately (no Play review), so testers actually get the
+      # build. Production lands as a draft so a human clicks "Start rollout".
+      release_status: options[:track] == "production" ? "draft" : "completed"
     )
     UI.success("Uploaded versionCode #{version_code} to #{options[:track]}")
   end

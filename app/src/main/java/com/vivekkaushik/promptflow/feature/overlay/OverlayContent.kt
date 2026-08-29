@@ -59,12 +59,15 @@ import kotlinx.coroutines.launch
 import com.vivekkaushik.promptflow.ui.components.PFIcon
 import com.vivekkaushik.promptflow.R
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 
 /**
  * Floating window anatomy (spec §02): 32dp drag header, glass text viewport with the
  * same guide band + lens caret as Studio, 48dp control strip, corner resize chevron,
  * and a 56dp bubble state with a red dot while scrolling.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OverlayContent(
     widthDp: Float,
@@ -219,7 +222,11 @@ fun OverlayContent(
                     PFIcon(if (engineState.playing || engineState.countdown > 0) R.drawable.ic_pause else R.drawable.ic_play, 15.dp, OnLime)
                 }
                 Box(
-                    Modifier.size(30.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.08f)).clickable { engine.rewind() },
+                    Modifier.size(30.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.08f))
+                        .combinedClickable(
+                            onClick = { engine.jumpSection(-1) },
+                            onLongClick = { engine.rewind() },
+                        ),
                     contentAlignment = Alignment.Center
                 ) { PFIcon(R.drawable.ic_rewind, 15.dp, MaterialTheme.colorScheme.onSurface) }
                 Slider(

@@ -1,8 +1,10 @@
 First release.
 
-• Floating overlay prompter that works over any camera app
+• Floating prompter that works over any camera app
 • Built-in studio: record up to 4K with the script under the lens
 • Voice sync — scrolling follows your speaking pace
-• Import .txt, .docx, .pdf and .md scripts
-• Mirroring for beam-splitter rigs, volume-key and Bluetooth remote control
+• Script markers: sections, pauses and timed holds
+• Takes saved against the script you read from
+• Import .txt, .docx, .pdf and .md
+• Mirroring for beam-splitter rigs, volume-key and Bluetooth remotes
 • Fully on-device: no account, no cloud, no analytics

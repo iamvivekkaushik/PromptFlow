@@ -42,6 +42,18 @@ import com.vivekkaushik.promptflow.ui.theme.Lime
 import com.vivekkaushik.promptflow.ui.theme.PlexSans
 import com.vivekkaushik.promptflow.ui.theme.fontProvider
 import java.io.File
+import com.vivekkaushik.promptflow.core.prompter.ScriptMarkup
+import com.vivekkaushik.promptflow.R
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.draw.clip
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.runtime.setValue
 
 /** Resolve the prompter font from settings: custom .ttf/.otf wins, else Google Font by name. */
 @Composable
@@ -154,12 +166,87 @@ fun PrompterViewport(
                 }
                 .padding(horizontal = horizontalPaddingDp.dp)
         ) {
-            state.text.split('\n').filter { it.isNotBlank() }.forEach { line ->
-                Text(
-                    text = line.trim(),
-                    style = style,
-                    modifier = Modifier.padding(bottom = (settings.fontSizeSp * fontScale * 0.55f).dp)
-                )
+            // Markup-aware rendering (spec: Phase 3). Speech runs carry the spoken words;
+            // headers and directives render distinctly and are excluded from WPM math.
+            val parsed = remember(state.text) { ScriptMarkup.parse(state.text) }
+            val paraGap = (settings.fontSizeSp * fontScale * 0.55f).dp
+            // word-top capture: segTops[i] = segment's y in the column; layouts[i] = its TextLayout
+            val segTops = remember(state.text) { mutableMapOf<Int, Float>() }
+            val segLayouts = remember(state.text) { mutableMapOf<Int, TextLayoutResult>() }
+            var layoutTick by remember(state.text) { mutableIntStateOf(0) }
+
+            // Push per-word line-top pixels to the engine once speech segments have laid out
+            LaunchedEffect(state.text, layoutTick, fontScale, settings.fontSizeSp, settings.lineHeightMult) {
+                if (parsed.words.isEmpty()) return@LaunchedEffect
+                val tops = FloatArray(parsed.words.size)
+                var word = 0
+                var complete = true
+                parsed.segments.forEachIndexed { i, seg ->
+                    if (seg is ScriptMarkup.Segment.Speech) {
+                        val top = segTops[i]
+                        val layout = segLayouts[i]
+                        val ranges = Regex("\\S+").findAll(seg.text).toList()
+                        if (top == null || layout == null) { complete = false; word += ranges.size }
+                        else ranges.forEach { m ->
+                            if (word < tops.size) {
+                                val line = layout.getLineForOffset(m.range.first)
+                                tops[word] = top + layout.getLineTop(line)
+                            }
+                            word++
+                        }
+                    }
+                }
+                if (complete && word == parsed.words.size) engine.wordTopsPx = tops
+            }
+
+            parsed.segments.forEachIndexed { i, seg ->
+                when (seg) {
+                    is ScriptMarkup.Segment.Speech -> Text(
+                        text = seg.text,
+                        style = style,
+                        onTextLayout = { segLayouts[i] = it; layoutTick++ },
+                        modifier = Modifier
+                            .onPlaced { segTops[i] = it.positionInParent().y; layoutTick++ }
+                            .padding(bottom = paraGap)
+                    )
+                    is ScriptMarkup.Segment.Header -> Text(
+                        text = seg.title,
+                        style = style.copy(
+                            color = Lime,
+                            fontSize = style.fontSize * 0.72f,
+                            lineHeight = style.fontSize * 0.9f,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.5.sp,
+                        ),
+                        modifier = Modifier.padding(bottom = paraGap * 0.6f)
+                    )
+                    is ScriptMarkup.Segment.Directive -> Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier
+                            .padding(bottom = paraGap * 0.6f)
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(
+                                if (seg.kind == ScriptMarkup.Kind.PAUSE) Lime.copy(alpha = 0.12f)
+                                else Color.White.copy(alpha = 0.06f)
+                            )
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        PFIcon(
+                            if (seg.kind == ScriptMarkup.Kind.PAUSE) R.drawable.ic_pause else R.drawable.ic_lines,
+                            (11 * fontScale).dp.coerceAtLeast(8.dp),
+                            if (seg.kind == ScriptMarkup.Kind.PAUSE) Lime else Color(0xFF90927F),
+                        )
+                        Text(
+                            seg.label.uppercase(),
+                            fontFamily = com.vivekkaushik.promptflow.ui.theme.PlexMono,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = (11 * fontScale).sp,
+                            letterSpacing = 1.sp,
+                            color = if (seg.kind == ScriptMarkup.Kind.PAUSE) Lime else Color(0xFF90927F),
+                        )
+                    }
+                }
             }
         }
 

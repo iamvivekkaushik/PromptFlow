@@ -10,7 +10,6 @@ import android.view.KeyEvent
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -31,6 +30,8 @@ import com.vivekkaushik.promptflow.feature.overlay.OverlayService
 import com.vivekkaushik.promptflow.feature.settings.SettingsScreen
 import com.vivekkaushik.promptflow.feature.studio.StudioScreen
 import com.vivekkaushik.promptflow.ui.theme.PromptFlowTheme
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.WindowCompat
 
 class MainActivity : ComponentActivity() {
 
@@ -38,10 +39,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge(
-            statusBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
-        )
+        // Edge-to-edge without androidx.activity's enableEdgeToEdge(): on API 35 that helper
+        // calls Window.setStatusBarColor()/setNavigationBarColor(), which are deprecated in
+        // Android 15 and flagged by the Play Console. Bar colours come from the theme instead.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false      // white icons on our dark UI
+            isAppearanceLightNavigationBars = false
+        }
         setContent {
             PromptFlowTheme {
                 val nav = rememberNavController()
@@ -99,7 +104,7 @@ class MainActivity : ComponentActivity() {
                 KeyEvent.KEYCODE_PAGE_DOWN,
                 KeyEvent.KEYCODE_DPAD_DOWN -> { engine.togglePlay(); return true }
                 KeyEvent.KEYCODE_PAGE_UP,
-                KeyEvent.KEYCODE_DPAD_UP -> { engine.rewind(); return true }
+                KeyEvent.KEYCODE_DPAD_UP -> { engine.jumpSection(-1); return true }
             }
         }
         return super.onKeyDown(keyCode, event)
@@ -142,6 +147,7 @@ private fun AppNavHost(nav: NavHostController, startOverlay: (Script) -> Unit) {
                 EditorScreen(
                     scriptId = id,
                     onBack = { nav.popBackStack() },
+                    onOpenHelp = { nav.navigate("help") },
                     onOpenStudio = { script -> Graph.engine.load(script); nav.navigate("studio") },
                     onOpenOverlay = startOverlay,
                 )
@@ -165,7 +171,13 @@ private fun AppNavHost(nav: NavHostController, startOverlay: (Script) -> Unit) {
                 SettingsScreen(
                     onBack = { nav.popBackStack() },
                     onOpenLicenses = { nav.navigate("licenses") },
+                    onOpenHelp = { nav.navigate("help") },
                 )
+            }
+        }
+        composable("help") {
+            androidx.compose.foundation.layout.Box(Modifier.safeDrawingPadding()) {
+                com.vivekkaushik.promptflow.feature.settings.HelpScreen(onBack = { nav.popBackStack() })
             }
         }
         composable("licenses") {

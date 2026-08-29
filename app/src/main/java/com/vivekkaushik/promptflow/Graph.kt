@@ -42,6 +42,19 @@ object Graph {
         if (id > 0) appScope.launch { db.scripts().markRecorded(id) }
     }
 
+    /** Persist a finished Studio take, linked to the engine's current script. */
+    fun saveTake(uri: String, durationMs: Long, quality: String, fps: Int) {
+        val id = engine.state.value.scriptId
+        if (id > 0 && uri.isNotBlank()) appScope.launch {
+            db.takes().insert(
+                com.vivekkaushik.promptflow.core.data.Take(
+                    scriptId = id, uri = uri, durationMs = durationMs,
+                    quality = quality, fps = fps, createdAt = System.currentTimeMillis(),
+                )
+            )
+        }
+    }
+
     fun persistProgress() {
         val s = engine.state.value
         if (s.scriptId > 0) {

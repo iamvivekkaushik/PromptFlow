@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.PromptFlow" parent="android:Theme.Material.NoActionBar">
+    <style name="Base.Theme.PromptFlow" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">#0C0E0A</item>
+        <!-- Edge-to-edge bar colours live in the theme, not in Window.setStatusBarColor():
+             those setters are deprecated from Android 15 and flagged by the Play Console. -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <!-- Dark-first UI: keep light (white) system bar icons -->
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
     </style>
+
+    <style name="Theme.PromptFlow" parent="Base.Theme.PromptFlow" />
 </resources>

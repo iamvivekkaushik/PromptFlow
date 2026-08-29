@@ -44,6 +44,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import com.vivekkaushik.promptflow.ui.components.PFIcon
 import com.vivekkaushik.promptflow.R
+import androidx.compose.foundation.horizontalScroll
 
 /** Script editor with live word count and est. duration = wordCount / WPM (spec §04). */
 @OptIn(FlowPreview::class)
@@ -53,16 +54,18 @@ fun EditorScreen(
     onBack: () -> Unit,
     onOpenStudio: (Script) -> Unit,
     onOpenOverlay: (Script) -> Unit,
+    onOpenHelp: () -> Unit = {},
 ) {
     var script by remember { mutableStateOf<Script?>(null) }
     var title by remember { mutableStateOf("") }
-    var body by remember { mutableStateOf("") }
+    var body by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue("")) }
     var loaded by remember { mutableStateOf(false) }
     val settings by Graph.settings.settings.collectAsState(initial = PrompterSettings())
 
     LaunchedEffect(scriptId) {
         Graph.db.scripts().byId(scriptId)?.let {
-            script = it; title = it.title; body = it.body
+            script = it; title = it.title
+            body = androidx.compose.ui.text.input.TextFieldValue(it.body)
         }
         loaded = true
     }
@@ -70,7 +73,7 @@ fun EditorScreen(
     // Autosave, debounced
     LaunchedEffect(loaded) {
         if (!loaded) return@LaunchedEffect
-        snapshotFlow { title to body }.debounce(500).collect { (t, b) ->
+        snapshotFlow { title to body.text }.debounce(500).collect { (t, b) ->
             script?.let { s ->
                 if (t != s.title || b != s.body) {
                     val updated = s.copy(title = t.ifBlank { "Untitled script" }, body = b, updatedAt = System.currentTimeMillis())
@@ -81,7 +84,7 @@ fun EditorScreen(
         }
     }
 
-    val words = body.split(Regex("\\s+")).count { it.isNotBlank() }
+    val words = remember(body.text) { com.vivekkaushik.promptflow.core.prompter.ScriptMarkup.parse(body.text).words.size }
     val totalSec = if (words > 0) (words * 60.0 / settings.wpm).toInt() else 0
     val est = "%d:%02d".format(totalSec / 60, totalSec % 60)
 
@@ -105,7 +108,7 @@ fun EditorScreen(
                 Box(
                     Modifier.clip(RoundedCornerShape(100.dp))
                         .border(1.dp, Lime.copy(alpha = 0.5f), RoundedCornerShape(100.dp))
-                        .clickable { onOpenOverlay(s.copy(title = title, body = body)) }
+                        .clickable { onOpenOverlay(s.copy(title = title, body = body.text)) }
                         .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -115,7 +118,7 @@ fun EditorScreen(
                 }
                 Box(
                     Modifier.clip(RoundedCornerShape(100.dp)).background(Lime)
-                        .clickable { onOpenStudio(s.copy(title = title, body = body)) }
+                        .clickable { onOpenStudio(s.copy(title = title, body = body.text)) }
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -137,7 +140,29 @@ fun EditorScreen(
                 Box { if (title.isEmpty()) Text("Title", style = MaterialTheme.typography.headlineMedium, color = Outline); inner() }
             }
         )
+        TakesRow(scriptId = scriptId, modifier = Modifier.padding(vertical = 6.dp))
         Spacer(Modifier.height(8.dp))
+        // Marker toolbar (spec: Phase 3) — inserts prompter markup at the cursor
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(androidx.compose.foundation.rememberScrollState())
+                .padding(bottom = 8.dp)
+        ) {
+            fun insert(snippet: String, caretBack: Int = 0) {
+                val sel = body.selection
+                val t = body.text
+                val nt = t.substring(0, sel.start) + snippet + t.substring(sel.end)
+                val pos = sel.start + snippet.length - caretBack
+                body = androidx.compose.ui.text.input.TextFieldValue(nt, androidx.compose.ui.text.TextRange(pos))
+            }
+            MarkerChip("＃ Section") { insert("\n## ") }
+            MarkerChip("Pause") { insert(" [[pause]] ") }
+            MarkerChip("Pause 3s") { insert(" [[pause 3s]] ") }
+            MarkerChip("B-roll") { insert(" [[b-roll: ]] ", caretBack = 4) }
+            MarkerChip("?", onClick = onOpenHelp)
+        }
         Box(
             Modifier
                 .fillMaxSize()
@@ -152,10 +177,23 @@ fun EditorScreen(
                 cursorBrush = SolidColor(Lime),
                 modifier = Modifier.fillMaxSize(),
                 decorationBox = { inner ->
-                    Box { if (body.isEmpty()) Text("Write or paste your script…", style = MaterialTheme.typography.bodyLarge, color = Outline); inner() }
+                    Box { if (body.text.isEmpty()) Text("Write or paste your script…", style = MaterialTheme.typography.bodyLarge, color = Outline); inner() }
                 }
             )
         }
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+
+@Composable
+private fun MarkerChip(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier.clip(RoundedCornerShape(100.dp))
+            .border(1.dp, com.vivekkaushik.promptflow.ui.theme.OutlineVariant, RoundedCornerShape(100.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(label, fontFamily = PlexMono, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
