@@ -2,10 +2,355 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=privacy-policy.html">
-<title>PromptFlow</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PromptFlow — teleprompter that follows your voice</title>
+<meta name="description" content="An Android teleprompter that floats over any camera app, records in 4K, and scrolls at the pace you actually speak. On-device, no account, no cloud.">
+<link rel="icon" href="img/icon.png">
+<meta property="og:title" content="PromptFlow — teleprompter that follows your voice">
+<meta property="og:description" content="Floats over any camera app, records in 4K, and scrolls at the pace you actually speak.">
+<meta property="og:image" content="img/icon.png">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0C0E0A; --surface:#1C1F17; --surface-hi:#262A20;
+    --text:#E4E3DB; --muted:#C6C8BA; --outline:#90927F; --border:#363B2D;
+    --lime:#C7E86C; --on-lime:#2A3400; --lime-container:#3E4C00;
+    --sora:"Sora",system-ui,sans-serif;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:16px/1.65 var(--sans); -webkit-font-smoothing:antialiased;
+  }
+  img{max-width:100%; display:block}
+  a{color:var(--lime); text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px}
+
+  /* nav */
+  header{position:sticky; top:0; z-index:10; background:rgba(12,14,10,.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--border)}
+  nav{display:flex; align-items:center; gap:14px; height:64px}
+  .brand{display:flex; align-items:center; gap:10px; font:700 19px var(--sora); color:var(--text)}
+  .brand:hover{text-decoration:none}
+  .brand svg{color:var(--lime); flex:none}
+  nav .spacer{flex:1}
+  nav a.navlink{color:var(--muted); font-size:14px; font-weight:500}
+  nav a.navlink:hover{color:var(--lime); text-decoration:none}
+  @media (max-width:640px){ nav a.navlink{display:none} }
+
+  /* buttons */
+  .btn{
+    display:inline-flex; align-items:center; gap:9px; border-radius:100px;
+    padding:13px 24px; font:600 15px var(--sora); background:var(--lime); color:var(--on-lime);
+  }
+  .btn:hover{background:#D6F383; text-decoration:none}
+  .btn.ghost{background:transparent; color:var(--lime); border:1px solid rgba(199,232,108,.45)}
+  .btn.ghost:hover{background:rgba(199,232,108,.08)}
+  .btn.sm{padding:9px 18px; font-size:14px}
+
+  /* hero */
+  .hero{position:relative; overflow:hidden; padding:76px 0 40px}
+  .hero::before{
+    content:""; position:absolute; inset:-40% 30% 40% -30%;
+    background:radial-gradient(closest-side, rgba(62,76,0,.55), transparent 70%);
+    pointer-events:none;
+  }
+  .hero .wrap{position:relative; display:grid; grid-template-columns:1.05fr .95fr; gap:48px; align-items:center}
+  h1{font:700 clamp(38px,5.2vw,60px)/1.08 var(--sora); margin:0 0 18px; letter-spacing:-.02em}
+  h1 .accent{color:var(--lime)}
+  .lede{font-size:19px; color:var(--muted); margin:0 0 28px; max-width:34ch}
+  .cta{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+  .cta .note{font:500 12px var(--mono); color:var(--outline); width:100%; margin-top:4px}
+  /* cropped from the top so the hero stays compact — the phone reads as continuing below */
+  .hero-shot{
+    justify-self:center; width:290px; height:520px; object-fit:cover; object-position:top center;
+    border-radius:26px; border:1px solid var(--border); box-shadow:0 30px 70px rgba(0,0,0,.55);
+  }
+  @media (max-width:860px){
+    .hero{padding:48px 0 24px}
+    .hero .wrap{grid-template-columns:1fr; gap:34px}
+    .lede{max-width:none}
+    .hero-shot{width:250px; height:440px}
+  }
+
+  /* sections */
+  section{padding:64px 0}
+  .eyebrow{font:600 11px var(--mono); letter-spacing:2px; color:var(--lime); margin:0 0 10px}
+  h2{font:700 clamp(26px,3.2vw,34px)/1.2 var(--sora); margin:0 0 12px; letter-spacing:-.01em}
+  .section-lede{color:var(--muted); margin:0 0 34px; max-width:60ch}
+
+  /* feature grid */
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:22px}
+  .card .ico{
+    width:42px; height:42px; border-radius:13px; background:var(--surface-hi); color:var(--lime);
+    display:flex; align-items:center; justify-content:center; margin-bottom:14px;
+  }
+  .card h3{font:600 17px var(--sora); margin:0 0 6px}
+  .card p{color:var(--muted); margin:0; font-size:14.5px}
+
+  /* shots */
+  .shots{display:grid; grid-template-columns:repeat(3,1fr); gap:20px}
+  .shots figure{margin:0}
+  .shots img{border-radius:20px; border:1px solid var(--border)}
+  .shots figcaption{font:500 12px var(--mono); color:var(--outline); margin-top:10px; text-align:center}
+  @media (max-width:760px){ .shots{grid-template-columns:1fr; max-width:340px; margin:0 auto} }
+
+  /* markers */
+  .markers{display:grid; grid-template-columns:.95fr 1.05fr; gap:40px; align-items:center}
+  .code{
+    background:#080A06; border:1px solid var(--border); border-radius:18px; padding:22px 24px;
+    font:14px/2.05 var(--mono); overflow-x:auto; white-space:pre; color:var(--muted);
+  }
+  .code .h{color:var(--lime); font-weight:500}
+  .code .m{color:#FFB94E}
+  .mlist{list-style:none; padding:0; margin:0; display:grid; gap:16px}
+  .mlist li{display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start}
+  .mlist code{
+    font:12px var(--mono); background:var(--surface-hi); color:var(--lime);
+    padding:4px 9px; border-radius:8px; white-space:nowrap;
+  }
+  .mlist p{margin:0; color:var(--muted); font-size:14.5px}
+  .mlist strong{display:block; color:var(--text); font-weight:600; font-size:14.5px}
+  @media (max-width:860px){ .markers{grid-template-columns:1fr; gap:26px} }
+
+  /* privacy band */
+  .band{background:linear-gradient(150deg,var(--lime-container),var(--surface)); border-radius:26px; padding:38px 34px}
+  .band h2{margin-bottom:10px}
+  .band p{color:#DCE8BC; margin:0 0 8px; max-width:62ch}
+  .band .pills{display:flex; gap:8px; flex-wrap:wrap; margin-top:18px}
+  .band .pills span{
+    font:500 12px var(--mono); color:var(--lime); border:1px solid rgba(199,232,108,.4);
+    border-radius:100px; padding:6px 13px;
+  }
+
+  /* cta strip */
+  .final{text-align:center; padding:16px 0 72px}
+  .final h2{margin-bottom:8px}
+  .final p{color:var(--muted); margin:0 0 24px}
+
+  footer{border-top:1px solid var(--border); padding:28px 0 44px; color:var(--outline); font-size:14px}
+  footer .row{display:flex; gap:20px; flex-wrap:wrap; align-items:center}
+  footer .spacer{flex:1}
+  footer a{color:var(--muted)}
+  footer a:hover{color:var(--lime)}
+</style>
 </head>
-<body style="margin:0;background:#0C0E0A;color:#E4E3DB;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh">
-<p>Redirecting to the <a href="privacy-policy.html" style="color:#C7E86C">PromptFlow privacy policy</a>…</p>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <path d="M10 2.5l2 2.6 2-2.6z" fill="currentColor" stroke="none"/>
+    <rect x="2.5" y="6" width="19" height="15.5" rx="4"/>
+    <line x1="6.5" y1="11" x2="17.5" y2="11"/><line x1="6.5" y1="15" x2="14" y2="15"/><line x1="6.5" y1="18.6" x2="11" y2="18.6"/>
+  </symbol>
+  <symbol id="i-pip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+    <rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="16" cy="15" r="3.2" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="i-record" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="5.5" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="i-voice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <line x1="4" y1="10" x2="4" y2="14"/><line x1="8" y1="7" x2="8" y2="17"/><line x1="12" y1="4" x2="12" y2="20"/>
+    <line x1="16" y1="8" x2="16" y2="16"/><line x1="20" y1="10.5" x2="20" y2="13.5"/>
+  </symbol>
+  <symbol id="i-import" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3v10"/><polyline points="8 9.5 12 13.5 16 9.5"/>
+    <path d="M4.5 15v2.5a2.5 2.5 0 0 0 2.5 2.5h10a2.5 2.5 0 0 0 2.5-2.5V15"/>
+  </symbol>
+  <symbol id="i-volume" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" fill="currentColor" stroke="none"/>
+    <path d="M15.5 9.2a4.2 4.2 0 0 1 0 5.6"/><path d="M18.5 6.5a8 8 0 0 1 0 11"/>
+  </symbol>
+  <symbol id="i-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 18l3.2-8.5L9.4 18"/><path d="M4 15.2h4.4"/><path d="M12.4 18l4.3-13L21 18"/><path d="M13.9 13.2h5.6"/>
+  </symbol>
+  <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></symbol>
+</defs></svg>
+
+<header>
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="#top"><svg width="26" height="26"><use href="#i-mark"></use></svg>PromptFlow</a>
+      <span class="spacer"></span>
+      <a class="navlink" href="#features">Features</a>
+      <a class="navlink" href="#markers">Script markers</a>
+      <a class="navlink" href="#privacy">Privacy</a>
+      <a class="btn sm" href="https://play.google.com/store/apps/details?id=com.vivekkaushik.promptflow">Get the app</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <div class="hero">
+    <div class="wrap">
+      <div>
+        <h1>Stop looking away<br><span class="accent">from the lens.</span></h1>
+        <p class="lede">
+          PromptFlow puts your script where you're already filming — floating over any camera app,
+          or inside its own 4K studio — and scrolls at the pace you actually speak.
+        </p>
+        <div class="cta">
+          <a class="btn" href="https://play.google.com/store/apps/details?id=com.vivekkaushik.promptflow">
+            <svg width="17" height="17"><use href="#i-play"></use></svg>Get it on Google Play
+          </a>
+          <a class="btn ghost" href="#features">See how it works</a>
+          <span class="note">ANDROID 9+ · NO ACCOUNT · WORKS OFFLINE</span>
+        </div>
+      </div>
+      <img class="hero-shot" src="img/shot-studio.png" width="540" height="1170"
+           alt="PromptFlow studio: a script scrolling over the camera viewfinder with recording controls">
+    </div>
+  </div>
+
+  <section id="features">
+    <div class="wrap">
+      <p class="eyebrow">WHAT YOU GET</p>
+      <h2>Built for people who film themselves</h2>
+      <p class="section-lede">
+        A prompter, a camera, and a script editor that understand each other — so a shoot day is
+        write, read, record, done.
+      </p>
+      <div class="grid">
+        <div class="card">
+          <div class="ico"><svg width="21" height="21"><use href="#i-pip"></use></svg></div>
+          <h3>Floating overlay</h3>
+          <p>Run the prompter over any app — your camera, Instagram, TikTok, a video call. Drag it,
+             pinch to resize, fade it, or collapse it to a bubble between takes.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg width="21" height="21"><use href="#i-record"></use></svg></div>
+          <h3>Built-in 4K studio</h3>
+          <p>Record with the script hovering under the lens. Tap to focus, pinch to zoom, exposure,
+             torch, framing grid, and 16:9 / 4:3 / 1:1 crops.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg width="21" height="21"><use href="#i-voice"></use></svg></div>
+          <h3>Voice sync</h3>
+          <p>The prompter listens and keeps your current line in the reading band. Speed up, slow
+             down, pause to think — the script follows you, not the other way around.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg width="21" height="21"><use href="#i-mark"></use></svg></div>
+          <h3>Takes that stay organised</h3>
+          <p>Every recording is linked back to the script it was read from, with thumbnails,
+             duration and quality — so you always know which take is which.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg width="21" height="21"><use href="#i-import"></use></svg></div>
+          <h3>Import anything</h3>
+          <p>Bring in .txt, .docx, .pdf and .md. Markdown headings become prompter sections
+             automatically, so an outlined document arrives ready to film.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg width="21" height="21"><use href="#i-volume"></use></svg></div>
+          <h3>Made for real rigs</h3>
+          <p>Mirroring for beam-splitter glass, volume keys and Bluetooth clickers for speed and
+             play/pause, and a start-delay countdown to get in position.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="markers">
+    <div class="wrap">
+      <p class="eyebrow">SCRIPT MARKERS</p>
+      <h2>Write it like a script, not a wall of text</h2>
+      <p class="section-lede">
+        Markers tell the prompter what to do — and never count as words you speak, so your
+        estimated read time and voice sync stay accurate.
+      </p>
+      <div class="markers">
+        <div class="code"><span class="h">## Intro</span>
+Hey everyone — welcome back.
+<span class="m">[[pause]]</span>
+Today we're unboxing the Flux 2.
+<span class="m">[[b-roll: slow pan across the desk]]</span>
+<span class="h">## The verdict</span>
+It's the readout that changes things.
+<span class="m">[[pause 3s]]</span>
+Let me show you.</div>
+        <ul class="mlist">
+          <li><code>## Section</code><p><strong>Section header</strong>Shows as a heading, and gives you a jump point you can skip back to while filming.</p></li>
+          <li><code>[[pause]]</code><p><strong>Stop and wait</strong>Scrolling halts when the line reaches the reading band. Tap to carry on — good for ad-libs.</p></li>
+          <li><code>[[pause 3s]]</code><p><strong>Timed hold</strong>Same, but counts down and resumes on its own.</p></li>
+          <li><code>[[b-roll: …]]</code><p><strong>Stage direction</strong>A dim note to yourself — camera moves, props, reminders. Shown, never spoken.</p></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">A LOOK AROUND</p>
+      <h2>Every surface, one prompter</h2>
+      <p class="section-lede">
+        Speed and reading position follow you between the studio and the overlay — switch surfaces
+        mid-shoot without losing your place.
+      </p>
+      <div class="shots">
+        <figure>
+          <img src="img/shot-library.png" width="540" height="1170" alt="Script library with a continue card, new script and import options">
+          <figcaption>SCRIPT LIBRARY</figcaption>
+        </figure>
+        <figure>
+          <img src="img/shot-overlay.png" width="540" height="1170" alt="The floating prompter panel over a camera app">
+          <figcaption>OVERLAY OVER YOUR CAMERA</figcaption>
+        </figure>
+        <figure>
+          <img src="img/shot-help.png" width="540" height="1170" alt="In-app help screen listing script marker syntax">
+          <figcaption>HELP BUILT IN</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="wrap">
+      <div class="band">
+        <p class="eyebrow">PRIVACY</p>
+        <h2>Your scripts never leave your phone</h2>
+        <p>
+          No account. No cloud. No analytics, ads or trackers. Scripts and settings live in local
+          storage on your device, and recordings save straight to your own gallery. The app doesn't
+          need the internet at all — except to fetch a font you pick.
+        </p>
+        <div class="pills">
+          <span>NO SIGN-UP</span><span>NO ANALYTICS</span><span>ON-DEVICE STORAGE</span><span>ON-DEVICE VOICE SYNC</span>
+        </div>
+        <p style="margin-top:18px"><a href="privacy-policy.html">Read the full privacy policy →</a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <h2>Write it once. Read it naturally.</h2>
+      <p>Free on Google Play, for Android 9 and up.</p>
+      <a class="btn" href="https://play.google.com/store/apps/details?id=com.vivekkaushik.promptflow">
+        <svg width="17" height="17"><use href="#i-play"></use></svg>Get it on Google Play
+      </a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap row">
+    <div class="brand" style="font-size:16px"><svg width="20" height="20"><use href="#i-mark"></use></svg>PromptFlow</div>
+    <span class="spacer"></span>
+    <a href="https://play.google.com/store/apps/details?id=com.vivekkaushik.promptflow">Google Play</a>
+    <a href="privacy-policy.html">Privacy policy</a>
+    <a href="https://github.com/iamvivekkaushik/PromptFlow">GitHub</a>
+  </div>
+</footer>
+
 </body>
 </html>
