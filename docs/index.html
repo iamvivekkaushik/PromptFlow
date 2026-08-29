@@ -28,7 +28,9 @@
     margin:0; background:var(--bg); color:var(--text);
     font:16px/1.65 var(--sans); -webkit-font-smoothing:antialiased;
   }
-  img{max-width:100%; display:block}
+  /* height:auto is required: the images carry width/height attributes, so constraining
+     width alone would keep the attribute height and squash the aspect ratio */
+  img{max-width:100%; height:auto; display:block}
   a{color:var(--lime); text-decoration:none}
   a:hover{text-decoration:underline}
   .wrap{max-width:1080px; margin:0 auto; padding:0 24px}
@@ -42,6 +44,7 @@
   nav .spacer{flex:1}
   nav a.navlink{color:var(--muted); font-size:14px; font-weight:500}
   nav a.navlink:hover{color:var(--lime); text-decoration:none}
+  nav a.gh{display:inline-flex; align-items:center; gap:6px}
   @media (max-width:640px){ nav a.navlink{display:none} }
 
   /* buttons */
@@ -98,9 +101,17 @@
   /* shots */
   .shots{display:grid; grid-template-columns:repeat(3,1fr); gap:20px}
   .shots figure{margin:0}
-  .shots img{border-radius:20px; border:1px solid var(--border)}
+  /* cropped from the top, like the hero: a full 9:19.5 screenshot is far too tall in a
+     three-up grid, so show the part that matters and let the phone run off the bottom */
+  .shots img{
+    width:100%; height:400px; object-fit:cover; object-position:top center;
+    border-radius:20px; border:1px solid var(--border);
+  }
   .shots figcaption{font:500 12px var(--mono); color:var(--outline); margin-top:10px; text-align:center}
-  @media (max-width:760px){ .shots{grid-template-columns:1fr; max-width:340px; margin:0 auto} }
+  @media (max-width:760px){
+    .shots{grid-template-columns:1fr; max-width:320px; margin:0 auto}
+    .shots img{height:440px}
+  }
 
   /* markers */
   .markers{display:grid; grid-template-columns:.95fr 1.05fr; gap:40px; align-items:center}
@@ -129,6 +140,16 @@
     font:500 12px var(--mono); color:var(--lime); border:1px solid rgba(199,232,108,.4);
     border-radius:100px; padding:6px 13px;
   }
+
+  .oss{
+    margin-top:24px; padding-top:22px; border-top:1px solid rgba(199,232,108,.22);
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  .oss .ico{width:40px; height:40px; border-radius:12px; background:rgba(0,0,0,.28); color:var(--lime);
+    display:flex; align-items:center; justify-content:center; flex:none}
+  .oss > div:nth-child(2){flex:1; min-width:240px}
+  .oss strong{display:block; font:600 15px var(--sora); color:var(--text); margin-bottom:3px}
+  .oss p{font-size:14px; margin:0; color:#DCE8BC}
 
   /* cta strip */
   .final{text-align:center; padding:16px 0 72px}
@@ -172,6 +193,9 @@
     <path d="M3 18l3.2-8.5L9.4 18"/><path d="M4 15.2h4.4"/><path d="M12.4 18l4.3-13L21 18"/><path d="M13.9 13.2h5.6"/>
   </symbol>
   <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 1.5A10.5 10.5 0 0 0 8.68 22c.53.1.72-.23.72-.5v-1.9c-2.92.64-3.54-1.25-3.54-1.25-.48-1.22-1.17-1.55-1.17-1.55-.96-.65.07-.64.07-.64 1.06.08 1.61 1.09 1.61 1.09.94 1.6 2.47 1.14 3.07.87.1-.68.37-1.14.67-1.4-2.33-.27-4.78-1.17-4.78-5.19 0-1.15.41-2.09 1.08-2.82-.11-.27-.47-1.34.1-2.79 0 0 .88-.28 2.89 1.07a10 10 0 0 1 5.26 0c2-1.35 2.88-1.07 2.88-1.07.58 1.45.22 2.52.11 2.79.67.73 1.08 1.67 1.08 2.82 0 4.03-2.46 4.92-4.8 5.18.38.33.72.97.72 1.96v2.9c0 .28.19.61.73.5A10.5 10.5 0 0 0 12 1.5z"/>
+  </symbol>
 </defs></svg>
 
 <header>
@@ -182,6 +206,9 @@
       <a class="navlink" href="#features">Features</a>
       <a class="navlink" href="#markers">Script markers</a>
       <a class="navlink" href="#privacy">Privacy</a>
+      <a class="navlink gh" href="https://github.com/iamvivekkaushik/PromptFlow">
+        <svg width="15" height="15"><use href="#i-github"></use></svg>Open source
+      </a>
       <a class="btn sm" href="https://play.google.com/store/apps/details?id=com.vivekkaushik.promptflow">Get the app</a>
     </nav>
   </div>
@@ -202,7 +229,7 @@
             <svg width="17" height="17"><use href="#i-play"></use></svg>Get it on Google Play
           </a>
           <a class="btn ghost" href="#features">See how it works</a>
-          <span class="note">ANDROID 9+ · NO ACCOUNT · WORKS OFFLINE</span>
+          <span class="note">ANDROID 9+ · NO ACCOUNT · WORKS OFFLINE · OPEN SOURCE</span>
         </div>
       </div>
       <img class="hero-shot" src="img/shot-studio.png" width="540" height="1170"
@@ -323,9 +350,20 @@ Let me show you.</div>
           need the internet at all — except to fetch a font you pick.
         </p>
         <div class="pills">
-          <span>NO SIGN-UP</span><span>NO ANALYTICS</span><span>ON-DEVICE STORAGE</span><span>ON-DEVICE VOICE SYNC</span>
+          <span>NO SIGN-UP</span><span>NO ANALYTICS</span><span>ON-DEVICE STORAGE</span><span>OPEN SOURCE</span>
         </div>
         <p style="margin-top:18px"><a href="privacy-policy.html">Read the full privacy policy →</a></p>
+        <div class="oss">
+          <div class="ico"><svg width="22" height="22"><use href="#i-github"></use></svg></div>
+          <div>
+            <strong>Don't take our word for it — read the code.</strong>
+            <p>PromptFlow is open source under the Apache License 2.0. The whole app, including
+               everything it does with your camera, microphone and scripts, is on GitHub.</p>
+          </div>
+          <a class="btn ghost sm" href="https://github.com/iamvivekkaushik/PromptFlow">
+            <svg width="15" height="15"><use href="#i-github"></use></svg>View on GitHub
+          </a>
+        </div>
       </div>
     </div>
   </section>
@@ -349,6 +387,7 @@ Let me show you.</div>
     <a href="https://play.google.com/store/apps/details?id=com.vivekkaushik.promptflow">Google Play</a>
     <a href="privacy-policy.html">Privacy policy</a>
     <a href="https://github.com/iamvivekkaushik/PromptFlow">GitHub</a>
+    <a href="https://github.com/iamvivekkaushik/PromptFlow/blob/master/LICENSE">Apache 2.0</a>
   </div>
 </footer>
 

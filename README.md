@@ -125,5 +125,17 @@ Minimum Android 9 (API 28), targets API 36.
 
 ## Licence
 
+PromptFlow is licensed under the [Apache License 2.0](LICENSE).
+
+```
+Copyright 2026 Vivek Kaushik
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+```
+
 Open-source dependencies and their licences are listed in the app under
 **Settings → About → Open-source libraries**.

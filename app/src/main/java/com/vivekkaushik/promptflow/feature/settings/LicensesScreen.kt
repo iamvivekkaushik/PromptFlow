@@ -108,7 +108,9 @@ fun LicensesScreen(onBack: () -> Unit) {
             Text("LICENSES", fontFamily = PlexMono, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = 1.5.sp, color = Outline)
             Spacer(Modifier.height(8.dp))
             Text(
-                "Apache License 2.0 — code libraries above are used under the Apache License, Version 2.0. " +
+                "PromptFlow itself is open source under the Apache License 2.0 — the full source is at " +
+                    "github.com/iamvivekkaushik/PromptFlow.\n\n" +
+                    "Apache License 2.0 — code libraries above are used under the Apache License, Version 2.0. " +
                     "You may obtain a copy at apache.org/licenses/LICENSE-2.0.\n\n" +
                     "SIL Open Font License 1.1 — the Sora and IBM Plex typefaces are used under the OFL, " +
                     "available at openfontlicense.org.",
